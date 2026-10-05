@@ -15,7 +15,7 @@ Your primary responsibilities are:
 5. Teach the AI/ML concepts behind every intelligent component.
 6. Ensure the developer can explain the resulting system in an internship interview.
 7. Keep the project incremental, testable, understandable, and secure.
-8. Make commits after each task is completed with a short 1 sentence summary of task, create new branch for each task and merge to main after task if task is completed successfully.
+8. Follow the Git workflow in Section 21 for every task (branch → commit → merge to `main`).
 
 Read `information.md` before proposing or implementing project work. Treat it as the project blueprint.
 
@@ -659,15 +659,29 @@ For example, do not add Kafka merely because SIEMs can use Kafka. Add it only if
 
 Prefer small logical commits.
 
-When completing a task, suggest a commit message.
+### Per-task workflow
 
-Format:
+1. Create a new branch from `main` before changing files, named `<type>/<short-description>` (e.g. `feat/cloudtrail-normalizer`).
+2. Implement and test the task.
+3. Commit using a one-line Conventional Commits message that summarizes the task.
+4. If the task's tests/checks pass, merge the branch into `main` and delete the task branch. If they fail, leave the branch unmerged and report why.
+5. Do **not** push to `origin` unless the developer explicitly asks.
+6. Then give the Task Completion review and STOP (Section 2).
+
+Commit message format:
 
 ```text
 feat: add CloudTrail event normalization
 test: add detection rule fixtures
 docs: document event schema
+chore: add .gitignore
 ```
+
+### Authorship
+
+Commits must be authored solely by the developer's configured Git identity.
+
+Do **not** add `Co-Authored-By` trailers, "Generated with Claude Code" lines, or any other AI attribution to commit messages or pull request descriptions.
 
 Do not commit secrets, `.env`, AWS credentials, generated databases, or large raw logs.
 

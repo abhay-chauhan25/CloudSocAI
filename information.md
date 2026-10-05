@@ -1242,9 +1242,11 @@ Testing is especially important in security because false positives and false ne
 
 ## 28. Development Roadmap
 
+> **The authoritative, numbered task roadmap is `CLAUDE.md` Section 25 (Stages 0–19, tasks 1–165).** Refer to work by its Stage/task number there. The phases below are a high-level conceptual summary only, are not numbered to match, and must not be used to sequence tasks.
+
 The project should be built sequentially. Each phase depends on concepts introduced earlier.
 
-### Phase 0 — Specification and foundation
+### Specification and foundation
 
 - Understand project architecture
 - Define Event, Finding, Incident
@@ -1254,20 +1256,20 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Configure tests/linting
 - Create documentation
 
-### Phase 1 — Synthetic CloudTrail ingestion
+### Synthetic CloudTrail ingestion
 
 - Learn CloudTrail structure
 - Add sample CloudTrail events
 - Parse local JSON
 - Validate input
 
-### Phase 2 — Normalization
+### Normalization
 
 - Define internal Event schema
 - Convert raw CloudTrail records into normalized events
 - Test normalizer
 
-### Phase 3 — Persistence
+### Persistence
 
 - Introduce PostgreSQL
 - Learn relational modeling
@@ -1275,20 +1277,20 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Add migrations
 - Persist events
 
-### Phase 4 — Detection engine
+### Detection engine
 
 - Build detector interface
 - Implement first rules
 - Produce findings
 - Test positive/negative cases
 
-### Phase 5 — Findings persistence and risk scoring
+### Findings persistence and risk scoring
 
 - Persist findings
 - Define severity model
 - Build explainable initial risk scoring
 
-### Phase 6 — FastAPI
+### FastAPI
 
 - Expose events and findings
 - Add API schemas
@@ -1296,7 +1298,7 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Add health endpoint
 - Add API tests
 
-### Phase 7 — Real AWS CloudTrail ingestion
+### Real AWS CloudTrail ingestion
 
 - Learn boto3 authentication
 - Apply least privilege
@@ -1304,7 +1306,7 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Decompress/parse
 - Reuse normalization pipeline
 
-### Phase 8 — CSPM
+### CSPM
 
 - Inspect IAM
 - Inspect S3
@@ -1312,7 +1314,7 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Inspect logging configuration
 - Convert posture problems into standardized findings
 
-### Phase 9 — Correlation and incidents
+### Correlation and incidents
 
 - Define correlation windows
 - Group related findings
@@ -1320,14 +1322,14 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Build timelines
 - Update risk scores
 
-### Phase 10 — Frontend foundation
+### Frontend foundation
 
 - Create React/TypeScript app
 - Learn components/state/data fetching
 - Connect to FastAPI
 - Display dashboard data
 
-### Phase 11 — Incident UI
+### Incident UI
 
 - Findings list
 - Incident list
@@ -1335,13 +1337,13 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Timeline
 - Risk explanation
 
-### Phase 12 — MITRE ATT&CK
+### MITRE ATT&CK
 
 - Add curated technique mappings
 - Explain tactic/technique concepts
 - Display mappings
 
-### Phase 13 — AI analyst
+### AI analyst
 
 - Introduce LLM abstraction
 - Build context builder
@@ -1350,7 +1352,7 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Display AI investigation
 - Discuss hallucination and prompt-injection risks
 
-### Phase 14 — ML foundation
+### ML foundation
 
 - Build feature extraction
 - Understand anomaly detection
@@ -1359,46 +1361,46 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Choose threshold
 - Add anomaly signal
 
-### Phase 15 — Multi-signal risk engine
+### Multi-signal risk engine
 
 - Combine rules, context, correlation, and ML
 - Keep scoring explainable
 - Test edge cases
 
-### Phase 16 — VPC Flow Logs
+### VPC Flow Logs
 
 - Parse and normalize flow logs
 - Learn TCP/IP and flow metadata
 - Add network detections
 
-### Phase 17 — Network anomaly detection
+### Network anomaly detection
 
 - Port-scan behavior
 - Connection-volume anomalies
 - Outbound transfer anomalies
 - Integrate with incidents
 
-### Phase 18 — Ask CloudSOC
+### Ask CloudSOC
 
 - Natural-language questions
 - Safe query/retrieval layer
 - Ground answers in database evidence
 - Protect against arbitrary database access
 
-### Phase 19 — Terraform security lab
+### Terraform security lab
 
 - Learn IaC
 - Provision controlled lab
 - Generate test telemetry
 - Tear resources down safely
 
-### Phase 20 — Dockerization
+### Dockerization
 
-- Containerize backend/frontend/database
+- Containerize backend/frontend (PostgreSQL already runs in Docker Compose from the Persistence stage)
 - Docker Compose local environment
 - Explain networking/volumes/environment variables
 
-### Phase 21 — CI/CD and quality
+### CI/CD and quality
 
 - GitHub Actions
 - Tests
@@ -1406,7 +1408,7 @@ The project should be built sequentially. Each phase depends on concepts introdu
 - Type checking
 - Dependency/security checks where useful
 
-### Phase 22 — Portfolio polish
+### Portfolio polish
 
 - README
 - Architecture diagram
@@ -1434,7 +1436,7 @@ Normalized Event
         ↓
 PostgreSQL
         ↓
-~10 deterministic detections
+Initial deterministic detections (3 in the first slice, growing toward ~10)
         ↓
 Findings
         ↓
