@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudsoc"
+version = "0.1.0"
+description = "AWS-focused cloud SIEM, CSPM, and AI-assisted security investigation platform (portfolio prototype)."
+requires-python = ">=3.12"
+authors = [{ name = "Abhay Chauhan" }]
+# Runtime dependencies are added one at a time, by the task that needs them.
+dependencies = []
+
+[tool.setuptools.packages.find]
+# Flat layout: package only `app` (and its subpackages), never tests or the venv.
+include = ["app*"]
