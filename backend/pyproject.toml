@@ -11,6 +11,40 @@ authors = [{ name = "Abhay Chauhan" }]
 # Runtime dependencies are added one at a time, by the task that needs them.
 dependencies = []
 
+[project.optional-dependencies]
+# Development-only tools; install with: pip install -e ".[dev]"
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
 [tool.setuptools.packages.find]
 # Flat layout: package only `app` (and its subpackages), never tests or the venv.
 include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# -ra: summarize every non-passing test at the end.
+# --strict-markers / --strict-config: typos in markers or config fail loudly
+# instead of being silently ignored.
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes: unused imports/variables, undefined names
+    "I",   # isort: consistent import ordering
+    "B",   # flake8-bugbear: likely bugs (mutable defaults, etc.)
+    "UP",  # pyupgrade: modern syntax for the target Python version
+    "S",   # flake8-bandit: security issues (hard-coded secrets, eval, shell=True, ...)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest relies on plain `assert`; S101 only matters in application code,
+# where asserts are stripped under `python -O` and must not guard security checks.
+"tests/**" = ["S101"]
