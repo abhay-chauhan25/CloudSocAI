@@ -1,0 +1,90 @@
+# =============================================================================
+# CloudSOC AI — .gitignore
+# Rule of thumb: never commit secrets, generated artifacts, or local data.
+# =============================================================================
+
+# --- Secrets & credentials ----------------------------------------------------
+# Real configuration lives in .env (ignored); .env.example documents the
+# variable names with fake values and IS committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+# Never keep AWS credentials inside the repo; use ~/.aws or env vars instead.
+# Patterns are deliberately narrow: a broad "credentials.*" would also hide
+# source files such as backend/app/aws/credentials.py.
+.aws/
+credentials
+credentials.json
+credentials.csv
+*accessKeys.csv
+
+# --- Python -------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- Node / frontend ----------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# --- Local databases & data ---------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+# Docker volume bind-mounts for local PostgreSQL, if used.
+pgdata/
+postgres-data/
+# Real AWS telemetry downloaded for local testing. Synthetic fixtures belong
+# in sample-data/ instead (committed).
+local-data/
+
+# --- Logs ---------------------------------------------------------------------
+# Application logs are ignored, but synthetic flow-log fixtures are committed.
+*.log
+!sample-data/**/*.log
+
+# --- Terraform ----------------------------------------------------------------
+# State files can contain secrets in plain text. The provider lock file
+# (.terraform.lock.hcl) is intentionally NOT ignored, so versions stay pinned.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- OS & editors -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- Claude Code (personal, machine-local settings) ---------------------------
+.claude/settings.local.json
