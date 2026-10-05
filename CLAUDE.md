@@ -750,9 +750,37 @@ Do not silently discard security data.
 
 ## 25. Development Roadmap
 
-Use this roadmap as the default sequence.
+Stage and task numbers below are stable identifiers. The **execution order** is set by the sprint schedule that follows, not by the stage numbers.
 
 Each numbered item may contain multiple small tasks. Do not implement the entire numbered item at once unless it is genuinely tiny.
+
+### 7-day sprint schedule (2026-10-06 → 2026-10-12)
+
+Stage 0 is complete. The remaining work runs in this order:
+
+| Day | Date | Stages | Tasks | Outcome |
+|---|---|---|---|---|
+| 1 | Tue 2026-10-06 | 1, 2, 3 | 9–28 | Synthetic CloudTrail → normalized Events → PostgreSQL |
+| 2 | Wed 2026-10-07 | 4, 5, 6 | 29–53 | Detectors → Findings with explainable risk → FastAPI |
+| 3 | Thu 2026-10-08 | 9, 10 | 69–87 | Correlation/Incidents + React dashboard — **MVP complete** |
+| 4 | Fri 2026-10-09 | 11, 12 | 88–104 | MITRE ATT&CK mappings + AI analyst |
+| 5 | Sat 2026-10-10 | 13, 8 | 105–115, 61–68 | ML anomaly detection + CSPM checks (mocked) |
+| 6 | Sun 2026-10-11 | 7, 16 | 54–60, 131–140 | Real AWS ingestion + Terraform lab, torn down the same day |
+| 7 | Mon 2026-10-12 | 17, 18, 19 | 141–165 | Containers, CI/CD, portfolio completion |
+
+**Deferred (stretch goals, not in the sprint):** Stage 14 (VPC Flow Logs) and Stage 15 (Ask CloudSOC). Do not start them unless the developer explicitly asks.
+
+**Reordering rationale:** the MVP (§26) is reached on Day 3 so a demoable project exists even if the schedule slips. All real-AWS work is consolidated on Day 6 to minimise cost and the lifetime of lab resources.
+
+**Sprint working mode** (overrides the one-task-at-a-time default in §2 for the duration of the sprint):
+
+- The developer approves a **day's batch** of stages. Implement the stages in order, testing each stage before moving on.
+- Make **one commit per stage** (§21 rules otherwise apply).
+- Give a full Task Completion review (§6) **per stage**. Per-task explanations may be brief, but no concept may be skipped.
+- Batch the developer's decisions (§8) at the start of the day.
+- End each day with a short interview-practice round (§27): ask questions and let the developer answer first.
+- STOP at the end of the day's batch and wait for approval before starting the next day.
+- If a day's batch cannot be finished, stop at a stage boundary, report what remains, and let the developer decide how to re-plan.
 
 ### Stage 0 — Repository and learning foundation
 1. Inspect repository.
@@ -897,7 +925,7 @@ Each numbered item may contain multiple small tasks. Do not implement the entire
 114. Integrate anomaly signal into risk scoring.
 115. Test reproducibility and false-positive examples.
 
-### Stage 14 — VPC Flow Logs
+### Stage 14 — VPC Flow Logs *(deferred — stretch goal)*
 116. Explain VPC Flow Logs and networking fields.
 117. Create synthetic flow-log fixtures.
 118. Define normalized network event schema strategy.
@@ -907,7 +935,7 @@ Each numbered item may contain multiple small tasks. Do not implement the entire
 122. Add outbound-volume detection.
 123. Correlate network findings with incidents.
 
-### Stage 15 — Ask CloudSOC
+### Stage 15 — Ask CloudSOC *(deferred — stretch goal)*
 124. Define allowed natural-language queries.
 125. Build safe retrieval interface.
 126. Retrieve relevant CloudSOC evidence.
