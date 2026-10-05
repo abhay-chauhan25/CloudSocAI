@@ -1060,7 +1060,7 @@ Display:
 ## 24. Proposed Repository Structure
 
 ```text
-cloudsoc-ai/
+CloudSocAI/
 
 ├── backend/
 │   ├── app/
@@ -1106,7 +1106,6 @@ cloudsoc-ai/
 │   ├── cloudtrail/
 │   └── flow-logs/
 │
-├── detection-rules/
 ├── docs/
 │   ├── architecture.md
 │   ├── detections.md
@@ -1121,6 +1120,20 @@ cloudsoc-ai/
 ```
 
 This structure is a target architecture. Do not create empty complexity prematurely. Directories should be introduced as their corresponding task is implemented.
+
+### Naming conventions
+
+| Context | Name |
+|---|---|
+| Prose, docs, UI | CloudSOC AI |
+| Repository / root folder | `CloudSocAI` |
+| Python import package | `app` (in `backend/app/`) |
+| Python distribution name (`pyproject.toml`) | `cloudsoc` |
+
+### Structure decisions
+
+- **Flat `backend/app/` layout, not `src/` layout.** CloudSOC is a deployed application, not a library published to PyPI, and a top-level `app` package is the FastAPI convention.
+- **Detection rules are Python classes in `backend/app/detection/rules/`.** There is no separate top-level rules directory. Data-driven (e.g. YAML) rules would be a later, explicitly justified change.
 
 ---
 
