@@ -5,6 +5,7 @@ scenarios they encode — and their safety — are pinned down here.
 """
 
 import ipaddress
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,29 @@ DOCUMENTATION_NETWORKS = [
     ipaddress.ip_network("198.51.100.0/24"),
     ipaddress.ip_network("203.0.113.0/24"),
 ]
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Long-term (AKIA) and temporary (ASIA) AWS access key IDs are 20 characters.
+AWS_KEY_ID_PATTERN = re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")
+SCANNED_DIRECTORIES = ["sample-data", "backend/app", "backend/tests", "backend/migrations", "docs"]
+SCANNED_SUFFIXES = {".json", ".py", ".md", ".log", ".txt", ".yml", ".yaml", ".toml", ".ini"}
+
+
+def is_documentation_style_key_id(key_id: str) -> bool:
+    return len(key_id) == 20 and key_id.endswith("EXAMPLE")
+
+
+def repository_text_files() -> list[Path]:
+    root_files = [p for p in REPO_ROOT.iterdir() if p.is_file() and p.suffix in SCANNED_SUFFIXES]
+    nested = [
+        path
+        for directory in SCANNED_DIRECTORIES
+        for path in (REPO_ROOT / directory).rglob("*")
+        if path.is_file() and path.suffix in SCANNED_SUFFIXES
+    ]
+    return root_files + nested
 
 
 def load(samples_dir: Path, filename: str) -> list[RawRecord]:
@@ -122,7 +146,21 @@ def test_access_key_ids_are_obviously_fake(cloudtrail_samples_dir: Path) -> None
 
     assert key_ids, "expected fixtures to contain access key IDs"
     for key_id in key_ids:
-        assert key_id == "" or "EXAMPLE" in key_id, key_id
+        assert key_id == "" or is_documentation_style_key_id(key_id), key_id
+
+
+def test_no_realistic_key_ids_anywhere_in_the_repository() -> None:
+    # Secret scanners (e.g. GitHub's) flag any string shaped like a real AWS
+    # key ID. Fake IDs must follow AWS's documentation style — ending in
+    # EXAMPLE — so they are both obviously fake and ignored by scanners.
+    offenders = [
+        f"{path.relative_to(REPO_ROOT)}: {match}"
+        for path in repository_text_files()
+        for match in AWS_KEY_ID_PATTERN.findall(path.read_text(encoding="utf-8"))
+        if not is_documentation_style_key_id(match)
+    ]
+
+    assert offenders == []
 
 
 # --- scenarios that later detector tests rely on ----------------------------

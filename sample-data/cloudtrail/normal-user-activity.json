@@ -39,7 +39,7 @@
         "principalId": "AIDAEXAMPLEDEVELOPER1",
         "arn": "arn:aws:iam::123456789012:user/developer",
         "accountId": "123456789012",
-        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "accessKeyId": "ASIADEVCONSOLEXAMPLE",
         "userName": "developer",
         "sessionContext": {
           "attributes": {
@@ -75,7 +75,7 @@
         "principalId": "AIDAEXAMPLEDEVELOPER1",
         "arn": "arn:aws:iam::123456789012:user/developer",
         "accountId": "123456789012",
-        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "accessKeyId": "ASIADEVCONSOLEXAMPLE",
         "userName": "developer",
         "sessionContext": {
           "attributes": {
@@ -110,7 +110,7 @@
         "principalId": "AIDAEXAMPLEDEVELOPER1",
         "arn": "arn:aws:iam::123456789012:user/developer",
         "accountId": "123456789012",
-        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "accessKeyId": "ASIADEVCONSOLEXAMPLE",
         "userName": "developer",
         "sessionContext": {
           "attributes": {
@@ -153,7 +153,7 @@
         "principalId": "AIDAEXAMPLEADMINALICE",
         "arn": "arn:aws:iam::123456789012:user/admin-alice",
         "accountId": "123456789012",
-        "accessKeyId": "ASIAEXAMPLEALICECONS",
+        "accessKeyId": "ASIAALICECONSEXAMPLE",
         "userName": "admin-alice",
         "sessionContext": {
           "attributes": {
@@ -200,7 +200,7 @@
       },
       "responseElements": {
         "credentials": {
-          "accessKeyId": "ASIAEXAMPLEREPORTGEN",
+          "accessKeyId": "ASIAREPORTGENEXAMPLE",
           "expiration": "Oct 5, 2026, 12:15:01 PM"
         },
         "assumedRoleUser": {
@@ -231,7 +231,7 @@
         "principalId": "AROAEXAMPLEREPORTGEN1:report-generator",
         "arn": "arn:aws:sts::123456789012:assumed-role/report-generator-role/report-generator",
         "accountId": "123456789012",
-        "accessKeyId": "ASIAEXAMPLEREPORTGEN",
+        "accessKeyId": "ASIAREPORTGENEXAMPLE",
         "sessionContext": {
           "sessionIssuer": {
             "type": "Role",

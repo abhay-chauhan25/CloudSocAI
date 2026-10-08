@@ -111,7 +111,7 @@ Fixtures must never contain real identifiers. They use values reserved for docum
 |---|---|
 | Account ID | `123456789012` (AWS documentation example account) |
 | IP addresses | RFC 5737 documentation ranges: `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24` |
-| Access key IDs | Must contain `EXAMPLE` (e.g. AWS's own documentation key `AKIAIOSFODNN7EXAMPLE`), or be empty as on a root console sign-in |
+| Access key IDs | 20 characters **ending in `EXAMPLE`**, like AWS's own documentation key `AKIAIOSFODNN7EXAMPLE` (or empty, as on a root console sign-in). Any other `AKIA…`/`ASIA…` string of real length is flagged by secret scanners such as GitHub's, even when it is made up. |
 
 These ranges are guaranteed never to be routed or assigned, so fixtures can never point at a real system or leak a real credential. `backend/tests/test_cloudtrail_fixtures.py` enforces this.
 

@@ -147,7 +147,7 @@ def test_assumed_role_uses_stable_role_identity() -> None:
             "principalId": "AROAEXAMPLEREPORTGEN1:report-generator",
             "arn": f"arn:aws:sts::{ACCOUNT}:assumed-role/report-generator-role/report-generator",
             "accountId": ACCOUNT,
-            "accessKeyId": "ASIAEXAMPLEREPORTGEN",
+            "accessKeyId": "ASIAREPORTGENEXAMPLE",
             "sessionContext": {
                 "sessionIssuer": {
                     "type": "Role",
