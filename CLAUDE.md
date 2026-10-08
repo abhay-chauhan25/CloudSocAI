@@ -661,29 +661,29 @@ Prefer small logical commits.
 
 ### Per-task workflow
 
-**One commit per task.** Make a single commit at the end of the task, after tests/checks pass. Do not make intermediate commits or merge commits.
+**One commit per task — or per stage during the sprint (§25).** Make a single commit at the end, after tests/checks pass. Do not make intermediate commits or merge commits.
 
 **Small tasks** (config, docs, a single small file — little risk of a half-finished state) are committed directly on `main`.
 
 **Substantial tasks** (meaningful code, multiple files, or work that might be abandoned) use a branch:
 
-1. Create a branch from `main` named `<type>/<short-description>` (e.g. `feat/cloudtrail-normalizer`).
+1. Create a branch from `main` named after the work (e.g. `cloudtrail-normalizer`).
 2. Implement and test the task, then make the single task commit on that branch.
 3. If tests/checks pass, fast-forward `main` to it (`git merge --ff-only`) and delete the branch, so `main` gains exactly one commit. If they fail, leave the branch unmerged and report why.
 
 For every task:
 
-- Use a one-line Conventional Commits message that summarizes the task.
-- Do **not** push to `origin` unless the developer explicitly asks.
+- Write a short, general, **past-tense** commit message: just enough to understand what changed. No type prefixes (`feat:`, `chore:`, etc.).
+- After the commit is on `main` and checks pass, **push to `origin`**. Never force-push without explicit approval.
 - Then give the Task Completion review and STOP (Section 2).
 
-Commit message format:
+Commit message examples:
 
 ```text
-feat: add CloudTrail event normalization
-test: add detection rule fixtures
-docs: document event schema
-chore: add .gitignore
+Added CloudTrail normalization
+Added PostgreSQL event storage
+Added detection rules
+Updated project roadmap
 ```
 
 ### Authorship
