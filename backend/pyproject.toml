@@ -11,6 +11,10 @@ authors = [{ name = "Abhay Chauhan" }]
 # Runtime dependencies are added one at a time, by the task that needs them.
 dependencies = [
     "pydantic>=2.7",  # typed, validated schemas (Event, later API models)
+    "pydantic-settings>=2.2",  # typed configuration from environment variables / .env
+    "sqlalchemy>=2.0",  # ORM and SQL query builder
+    "psycopg[binary]>=3.1",  # PostgreSQL driver
+    "alembic>=1.13",  # database schema migrations
 ]
 
 [project.optional-dependencies]
@@ -30,6 +34,9 @@ testpaths = ["tests"]
 # --strict-markers / --strict-config: typos in markers or config fail loudly
 # instead of being silently ignored.
 addopts = ["-ra", "--strict-markers", "--strict-config"]
+markers = [
+    "db: needs the local PostgreSQL database (skipped with a reason if it is not running)",
+]
 
 [tool.ruff]
 target-version = "py312"

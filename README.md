@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype (Stage 0 — foundation).** The repository currently contains project tooling and design documents only. No ingestion, detection, or API functionality exists yet. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, and stored in PostgreSQL. Detection rules, the API, and the dashboard do not exist yet. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -24,25 +24,43 @@ Core design rule: **rules and ML detect; the LLM only explains.** The LLM never 
 
 ```text
 backend/
-  app/            Python package for the backend (ingestion, detection, API, ...)
-  tests/          pytest test suite
-  pyproject.toml  Project metadata, dependencies, and pytest/Ruff configuration
-docs/             Architecture and design notes
-information.md    Project blueprint (what and why)
-CLAUDE.md         Development contract and numbered task roadmap
+  app/
+    collectors/     read raw log files
+    normalization/  raw CloudTrail records -> Events
+    schemas/        Pydantic data models (Event)
+    models/         SQLAlchemy database tables
+    repositories/   save/load data
+    ingest.py       command: file -> normalize -> database
+  migrations/       Alembic database migrations
+  tests/            pytest test suite
+sample-data/        synthetic CloudTrail logs (fake identifiers only)
+docs/               architecture and CloudTrail reference
+docker-compose.yml  local PostgreSQL
+.env.example        configuration template (copy to .env)
 ```
-
-Further directories (`sample-data/`, `frontend/`, `infrastructure/`) are added when the tasks that need them are implemented.
 
 ## Local setup
 
-Requirements: **Python 3.12+**. No AWS account is needed — early stages run entirely on synthetic data.
+Requirements: **Python 3.12+** and **Docker**. No AWS account is needed — everything runs on synthetic data.
 
 ```bash
+# 1. Configuration: copy the template and set your own password
+cp .env.example .env
+
+# 2. Start PostgreSQL (bound to localhost only)
+docker compose up -d --wait
+
+# 3. Backend environment
 cd backend
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+
+# 4. Create the database tables
+alembic upgrade head
+
+# 5. Load the sample data (safe to re-run: duplicates are skipped)
+python -m app.ingest ../sample-data/cloudtrail/*.json
 ```
 
 ## Running checks
@@ -50,7 +68,8 @@ pip install -e ".[dev]"
 From `backend/` with the virtual environment activated:
 
 ```bash
-pytest                  # run the test suite
+pytest                  # run the test suite (database tests use a separate *_test database
+                        # and are skipped with a message if PostgreSQL is not running)
 ruff check .            # lint (includes security rules from flake8-bandit)
 ruff format --check .   # verify formatting (use `ruff format .` to fix)
 ```

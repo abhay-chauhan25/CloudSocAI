@@ -96,6 +96,26 @@ Key decisions:
 - **Bad records are reported, never dropped:** `normalize_cloudtrail_records()` returns both `events` and `errors` (index, event ID, reason). Error reasons name fields, never echo the offending input.
 - **`request_parameters` is passed through unvalidated.** Its shape differs per API; each detector reads only the keys it needs and must handle their absence. Per-API resource extraction is added only when a detector needs it.
 
+## Storage
+
+Events are stored in PostgreSQL (`docker-compose.yml`, bound to `127.0.0.1` only).
+
+```text
+python -m app.ingest <files>
+    → load_cloudtrail_file()          collectors/cloudtrail_file.py
+    → normalize_cloudtrail_records()  normalization/cloudtrail.py
+    → save_events()                   repositories/events.py
+    → events table                    models/event.py, created by migrations/
+```
+
+- **Two models on purpose.** The Pydantic `Event` is the validated in-memory shape; the SQLAlchemy `EventRecord` is the storage shape. Only `repositories/` converts between them.
+- **Idempotent ingestion.** `event_id` has a `UNIQUE` constraint and inserts use `ON CONFLICT DO NOTHING`, so re-ingesting a file stores nothing twice — enforced by the database even under concurrent writers.
+- **One transaction per file.** A file is stored completely or not at all; one unreadable file does not stop the others.
+- **Column types:** `timestamp with time zone`, `INET` for `source_ip`, `JSONB` for `raw_event` and `request_parameters` (queryable, e.g. `raw_event -> 'requestParameters' ->> 'policyArn'`). `ingested_at` records when CloudSOC stored the event, separate from when it happened.
+- **Indexes** on `timestamp`, `principal_arn`, and `event_name` — the fields detection and correlation filter by.
+- **Schema changes only through Alembic migrations.** Constraint names follow a fixed naming convention. A test fails if the models and migrations drift apart.
+- **Configuration** comes from environment variables or the gitignored `.env`; the password is a `SecretStr` and is never written to committed files.
+
 ### Open design points (resolved in later tasks)
 
 These are noted now so the schemas are designed deliberately, not discovered late:
