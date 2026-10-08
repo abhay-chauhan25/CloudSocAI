@@ -1,0 +1,212 @@
+{
+  "Records": [
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:04:12Z",
+      "eventSource": "sts.amazonaws.com",
+      "eventName": "GetCallerIdentity",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#sts.get-caller-identity",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000001",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000001",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:04:40Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "ListAttachedUserPolicies",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#iam.list-attached-user-policies",
+      "requestParameters": {
+        "userName": "developer"
+      },
+      "responseElements": null,
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000002",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000002",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:05:02Z",
+      "eventSource": "secretsmanager.amazonaws.com",
+      "eventName": "ListSecrets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#secretsmanager.list-secrets",
+      "errorCode": "AccessDenied",
+      "errorMessage": "User: arn:aws:iam::123456789012:user/developer is not authorized to perform: secretsmanager:ListSecrets because no identity-based policy allows the secretsmanager:ListSecrets action",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000003",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000003",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:05:31Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "CreateUser",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#iam.create-user",
+      "requestParameters": {
+        "userName": "svc-backup"
+      },
+      "responseElements": {
+        "user": {
+          "path": "/",
+          "userName": "svc-backup",
+          "userId": "AIDAEXAMPLESVCBACKUP1",
+          "arn": "arn:aws:iam::123456789012:user/svc-backup",
+          "createDate": "Oct 6, 2026, 3:05:31 AM"
+        }
+      },
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000004",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000004",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:05:48Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "CreateAccessKey",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#iam.create-access-key",
+      "requestParameters": {
+        "userName": "svc-backup"
+      },
+      "responseElements": {
+        "accessKey": {
+          "userName": "svc-backup",
+          "accessKeyId": "AKIAI44QH8DHBEXAMPLE",
+          "status": "Active",
+          "createDate": "Oct 6, 2026, 3:05:48 AM"
+        }
+      },
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000005",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000005",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-06T03:06:10Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "AttachUserPolicy",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#iam.attach-user-policy",
+      "requestParameters": {
+        "userName": "svc-backup",
+        "policyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+      },
+      "responseElements": null,
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000006",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000006",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLESVCBACKUP1",
+        "arn": "arn:aws:iam::123456789012:user/svc-backup",
+        "accountId": "123456789012",
+        "accessKeyId": "AKIAI44QH8DHBEXAMPLE",
+        "userName": "svc-backup"
+      },
+      "eventTime": "2026-10-06T03:07:55Z",
+      "eventSource": "sts.amazonaws.com",
+      "eventName": "GetCallerIdentity",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.50",
+      "userAgent": "aws-cli/2.17.0 md/awscrt#0.20.11 ua/2.0 os/linux#6.5.0 md/arch#x86_64 lang/python#3.11.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/distrib#kali.2024 md/prompt#off md/command#sts.get-caller-identity",
+      "requestParameters": null,
+      "responseElements": null,
+      "requestID": "7a4c1d92-5e3b-4f08-a6c1-200000000007",
+      "eventID": "9b2f4e6a-1c3d-4e5f-8a7b-200000000007",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+{
+  "Records": [
+    {
+      "eventVersion": "1.09",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "userName": "developer"
+      },
+      "eventTime": "2026-10-05T09:02:11Z",
+      "eventSource": "signin.amazonaws.com",
+      "eventName": "ConsoleLogin",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+      "requestParameters": null,
+      "responseElements": {
+        "ConsoleLogin": "Success"
+      },
+      "additionalEventData": {
+        "LoginTo": "https://console.aws.amazon.com/console/home",
+        "MobileVersion": "No",
+        "MFAIdentifier": "arn:aws:iam::123456789012:mfa/developer",
+        "MFAUsed": "Yes"
+      },
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000001",
+      "readOnly": false,
+      "eventType": "AwsConsoleSignIn",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "userName": "developer",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2026-10-05T09:02:11Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      },
+      "eventTime": "2026-10-05T09:03:40Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "AWS Internal",
+      "requestParameters": {
+        "instancesSet": {},
+        "filterSet": {}
+      },
+      "responseElements": null,
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000002",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000002",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management",
+      "sessionCredentialFromConsole": "true"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "userName": "developer",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2026-10-05T09:02:11Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      },
+      "eventTime": "2026-10-05T09:05:02Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "ListBuckets",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "AWS Internal",
+      "requestParameters": {
+        "Host": "s3.amazonaws.com"
+      },
+      "responseElements": null,
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000003",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000003",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management",
+      "sessionCredentialFromConsole": "true"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEDEVELOPER1",
+        "arn": "arn:aws:iam::123456789012:user/developer",
+        "accountId": "123456789012",
+        "accessKeyId": "ASIAEXAMPLEDEVCONSOLE",
+        "userName": "developer",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2026-10-05T09:02:11Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      },
+      "eventTime": "2026-10-05T10:15:30Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "StartInstances",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "AWS Internal",
+      "errorCode": "Client.UnauthorizedOperation",
+      "errorMessage": "You are not authorized to perform this operation.",
+      "requestParameters": {
+        "instancesSet": {
+          "items": [
+            {
+              "instanceId": "i-0example0analytics1"
+            }
+          ]
+        }
+      },
+      "responseElements": null,
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000004",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000004",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management",
+      "sessionCredentialFromConsole": "true"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLEADMINALICE",
+        "arn": "arn:aws:iam::123456789012:user/admin-alice",
+        "accountId": "123456789012",
+        "accessKeyId": "ASIAEXAMPLEALICECONS",
+        "userName": "admin-alice",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2026-10-05T11:20:05Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      },
+      "eventTime": "2026-10-05T11:30:00Z",
+      "eventSource": "iam.amazonaws.com",
+      "eventName": "AttachUserPolicy",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.41",
+      "userAgent": "AWS Internal",
+      "requestParameters": {
+        "userName": "intern-bob",
+        "policyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+      },
+      "responseElements": null,
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000005",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000005",
+      "readOnly": false,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management",
+      "sessionCredentialFromConsole": "true"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "AWSService",
+        "invokedBy": "lambda.amazonaws.com"
+      },
+      "eventTime": "2026-10-05T12:00:01Z",
+      "eventSource": "sts.amazonaws.com",
+      "eventName": "AssumeRole",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "lambda.amazonaws.com",
+      "userAgent": "lambda.amazonaws.com",
+      "requestParameters": {
+        "roleArn": "arn:aws:iam::123456789012:role/report-generator-role",
+        "roleSessionName": "report-generator"
+      },
+      "responseElements": {
+        "credentials": {
+          "accessKeyId": "ASIAEXAMPLEREPORTGEN",
+          "expiration": "Oct 5, 2026, 12:15:01 PM"
+        },
+        "assumedRoleUser": {
+          "assumedRoleId": "AROAEXAMPLEREPORTGEN1:report-generator",
+          "arn": "arn:aws:sts::123456789012:assumed-role/report-generator-role/report-generator"
+        }
+      },
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000006",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000006",
+      "readOnly": true,
+      "resources": [
+        {
+          "accountId": "123456789012",
+          "type": "AWS::IAM::Role",
+          "ARN": "arn:aws:iam::123456789012:role/report-generator-role"
+        }
+      ],
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "sharedEventID": "8a3d5f10-2c4b-4e6a-9f71-100000000006",
+      "eventCategory": "Management"
+    },
+    {
+      "eventVersion": "1.10",
+      "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "AROAEXAMPLEREPORTGEN1:report-generator",
+        "arn": "arn:aws:sts::123456789012:assumed-role/report-generator-role/report-generator",
+        "accountId": "123456789012",
+        "accessKeyId": "ASIAEXAMPLEREPORTGEN",
+        "sessionContext": {
+          "sessionIssuer": {
+            "type": "Role",
+            "principalId": "AROAEXAMPLEREPORTGEN1",
+            "arn": "arn:aws:iam::123456789012:role/report-generator-role",
+            "accountId": "123456789012",
+            "userName": "report-generator-role"
+          },
+          "attributes": {
+            "creationDate": "2026-10-05T12:00:01Z",
+            "mfaAuthenticated": "false"
+          }
+        }
+      },
+      "eventTime": "2026-10-05T12:00:03Z",
+      "eventSource": "ssm.amazonaws.com",
+      "eventName": "GetParameter",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "198.51.100.200",
+      "userAgent": "Boto3/1.34.0 md/Botocore#1.34.0 ua/2.0 os/linux lang/python#3.12.3 exec-env/AWS_Lambda_python3.12",
+      "requestParameters": {
+        "name": "/reports/output-bucket"
+      },
+      "responseElements": null,
+      "requestID": "6f2b9e41-3a7c-4d0e-8b15-100000000007",
+      "eventID": "4d1e7c2a-0b6f-4a51-9c3e-100000000007",
+      "readOnly": true,
+      "eventType": "AwsApiCall",
+      "managementEvent": true,
+      "recipientAccountId": "123456789012",
+      "eventCategory": "Management"
+    }
+  ]
+}
