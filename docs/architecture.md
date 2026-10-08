@@ -67,11 +67,40 @@ Each layer reduces noise. Collapsing them into one object would either bury anal
 
 Many SIEMs use **alert** for what CloudSOC calls a **finding**. CloudSOC uses "finding" (as AWS Security Hub does) because not every finding should page someone — informational findings still exist.
 
+## Normalized Event schema
+
+Defined in `backend/app/schemas/event.py` (Pydantic) and produced by `backend/app/normalization/cloudtrail.py`.
+
+```text
+raw CloudTrail record (untrusted dict)
+    ↓  normalize_cloudtrail_record()   — checks every field's presence and type
+Event (frozen Pydantic model)          — or NormalizationError with a specific reason
+```
+
+| Group | Fields | Notes |
+|---|---|---|
+| Record identity | `event_id`, `source`, `timestamp`, `account_id` | `event_id` is CloudTrail's `eventID` (dedup key); `timestamp` is always timezone-aware UTC |
+| What happened | `service`, `event_name`, `event_type`, `read_only`, `region` | `service` is `"iam"` from `"iam.amazonaws.com"` |
+| Who | `principal_type`, `principal`, `principal_arn`, `session_name`, `access_key_id`, `mfa_authenticated` | One consistent shape for every `userIdentity` variant |
+| From where | `source_address`, `source_ip`, `user_agent` | `source_ip` is set only when `source_address` really is an IP |
+| Outcome | `success`, `error_code`, `error_message` | |
+| Evidence | `request_parameters`, `raw_event` | `raw_event` keeps the original record unchanged |
+
+Key decisions:
+
+- **Immutable** (`frozen=True`): an Event is evidence. Analyst decisions belong on Findings and Incidents.
+- **Strict field names** (`extra="forbid"`): a typo fails loudly.
+- **Identity mapping:** `principal` is the human-readable actor (`"root"`, the user name, the *role* name, or the invoking service). For assumed roles, `principal_arn` is the stable **role ARN**, not the per-session ARN, so baselines and correlation group all sessions of a role together; the session is kept in `session_name`.
+- **Unknown is not false:** `mfa_authenticated` is `None` when the record does not say (e.g. long-term access key calls). An unrecognised identity type becomes `UNKNOWN` instead of being rejected.
+- **Failures:** `success` is false when `errorCode` is present, *or* when a `ConsoleLogin` has `responseElements.ConsoleLogin == "Failure"` (console failures carry no `errorCode`).
+- **Bad records are reported, never dropped:** `normalize_cloudtrail_records()` returns both `events` and `errors` (index, event ID, reason). Error reasons name fields, never echo the offending input.
+- **`request_parameters` is passed through unvalidated.** Its shape differs per API; each detector reads only the keys it needs and must handle their absence. Per-API resource extraction is added only when a detector needs it.
+
 ### Open design points (resolved in later tasks)
 
 These are noted now so the schemas are designed deliberately, not discovered late:
 
-- **Event schema (Task 15):** include the CloudTrail `eventID` (deduplication), AWS account ID (correlation), and error code (failed-call detections).
+- ~~**Event schema (Task 15)**~~ — resolved above.
 - **Finding schema (Task 30):** support zero, one, or many evidence events — not a single required `event_id`.
 - **Risk (Tasks 43–44):** store the score *with* its breakdown so it stays explainable.
 - **Incident schema (Task 69):** decide whether a finding can belong to more than one incident.

@@ -101,7 +101,7 @@ Access key ID prefixes are meaningful:
 | Detection-specific | `requestParameters.policyArn`, `requestParameters.userName`, `additionalEventData.MFAUsed` |
 | Traceability | `eventID`, and the full raw record kept as evidence |
 
-The Event schema itself is designed in Task 15.
+The resulting normalized Event schema is documented in [`architecture.md`](architecture.md#normalized-event-schema).
 
 ## Synthetic data conventions
 

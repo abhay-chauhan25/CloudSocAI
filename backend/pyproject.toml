@@ -9,7 +9,9 @@ description = "AWS-focused cloud SIEM, CSPM, and AI-assisted security investigat
 requires-python = ">=3.12"
 authors = [{ name = "Abhay Chauhan" }]
 # Runtime dependencies are added one at a time, by the task that needs them.
-dependencies = []
+dependencies = [
+    "pydantic>=2.7",  # typed, validated schemas (Event, later API models)
+]
 
 [project.optional-dependencies]
 # Development-only tools; install with: pip install -e ".[dev]"
