@@ -19,7 +19,7 @@ def write(tmp_path: Path, content: str) -> Path:
     return path
 
 
-# --- valid input ---------------------------------------------------------------
+# --- valid input ------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -56,7 +56,7 @@ def test_extra_top_level_keys_are_tolerated(tmp_path: Path) -> None:
     assert load_cloudtrail_file(path) == [{"eventName": "X"}]
 
 
-# --- malformed envelope ------------------------------------------------------
+# --- malformed envelope -----------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -91,7 +91,7 @@ def test_digest_file_shape_is_rejected(tmp_path: Path) -> None:
         load_cloudtrail_file(write(tmp_path, digest))
 
 
-# --- ambiguous or hostile input ----------------------------------------------
+# --- ambiguous or hostile input ---------------------------------------------
 
 
 def test_duplicate_keys_are_rejected(tmp_path: Path) -> None:
@@ -118,8 +118,8 @@ def test_non_utf8_file_is_rejected(tmp_path: Path) -> None:
 
 
 def test_gzip_file_is_rejected_not_misread(tmp_path: Path) -> None:
-    # Real S3 delivery is gzipped; that is handled in Stage 7. Until then a
-    # gzip file must fail clearly instead of being parsed as garbage.
+    # Real S3 delivery is gzipped, which this loader does not decompress.
+    # A gzip file must fail clearly instead of being parsed as garbage.
     path = tmp_path / "trail.json.gz"
     path.write_bytes(gzip.compress(b'{"Records": []}'))
 

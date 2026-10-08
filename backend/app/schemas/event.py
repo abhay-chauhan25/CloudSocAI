@@ -35,20 +35,20 @@ class Event(BaseModel):
     # extra="forbid": a misspelled field name is an error, not silently ignored.
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    # --- record identity -------------------------------------------------------
+    # --- record identity -----------------------------------------------------
     event_id: str = Field(min_length=1, description="Provider event ID; deduplication key")
     source: Literal["cloudtrail"] = Field(description="Telemetry source that produced the event")
     timestamp: AwareDatetime = Field(description="When the action happened, in UTC")
     account_id: str | None = Field(description="AWS account that recorded the event")
 
-    # --- what happened ---------------------------------------------------------
+    # --- what happened -------------------------------------------------------
     service: str = Field(min_length=1, description='Short service name, e.g. "iam"')
     event_name: str = Field(min_length=1, description='API name, e.g. "AttachUserPolicy"')
     event_type: str | None = Field(description='e.g. "AwsApiCall", "AwsConsoleSignIn"')
     read_only: bool | None = Field(description="True for read/list/describe calls")
     region: str = Field(min_length=1)
 
-    # --- who did it ------------------------------------------------------------
+    # --- who did it ----------------------------------------------------------
     principal_type: PrincipalType
     principal: str | None = Field(description="Human-readable actor: user, role, or service")
     principal_arn: str | None = Field(description="Stable ARN of the actor (role ARN for roles)")
@@ -56,7 +56,7 @@ class Event(BaseModel):
     access_key_id: str | None
     mfa_authenticated: bool | None = Field(description="None when the record does not say")
 
-    # --- from where, and how ---------------------------------------------------
+    # --- from where, and how -------------------------------------------------
     source_address: str | None = Field(
         description='sourceIPAddress as recorded: an IP, a service name, or "AWS Internal"'
     )
@@ -65,12 +65,12 @@ class Event(BaseModel):
     )
     user_agent: str | None = Field(description="Caller-controlled; treat as untrusted text")
 
-    # --- outcome ---------------------------------------------------------------
+    # --- outcome -------------------------------------------------------------
     success: bool
     error_code: str | None
     error_message: str | None
 
-    # --- evidence --------------------------------------------------------------
+    # --- evidence ------------------------------------------------------------
     request_parameters: dict[str, Any] | None = Field(
         description="API-specific inputs; unvalidated, shape differs per API"
     )

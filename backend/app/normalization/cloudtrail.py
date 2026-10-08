@@ -87,7 +87,7 @@ def normalize_cloudtrail_record(record: RawRecord) -> Event:
         raise NormalizationError(_summarize_validation_error(exc)) from exc
 
 
-# --- service / region / source (Task 18) ---------------------------------------
+# --- service / region / source ----------------------------------------------
 
 
 def _service_name(event_source: str) -> str:
@@ -108,7 +108,7 @@ def _parse_ip(source_address: str | None) -> ipaddress.IPv4Address | ipaddress.I
         return None
 
 
-# --- identity (Task 17) --------------------------------------------------------
+# --- identity ---------------------------------------------------------------
 
 
 def _identity_fields(identity: dict[str, Any]) -> dict[str, Any]:
@@ -180,7 +180,7 @@ def _yes_no(value: str | None, *, true: str, false: str) -> bool | None:
     raise NormalizationError(f"unexpected MFA value {value!r}")
 
 
-# --- outcome (Task 19) ---------------------------------------------------------
+# --- outcome ----------------------------------------------------------------
 
 
 def _outcome(record: RawRecord, event_name: str) -> tuple[bool, str | None, str | None]:
@@ -203,7 +203,7 @@ def _outcome(record: RawRecord, event_name: str) -> tuple[bool, str | None, str 
     return True, None, error_message
 
 
-# --- typed field access ----------------------------------------------------------
+# --- typed field access -----------------------------------------------------
 
 
 def _required_str(mapping: dict[str, Any], key: str) -> str:

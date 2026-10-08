@@ -67,7 +67,7 @@ def find(records: list[RawRecord], event_name: str) -> list[RawRecord]:
     return [record for record in records if record["eventName"] == event_name]
 
 
-# --- structure ----------------------------------------------------------------
+# --- structure --------------------------------------------------------------
 
 
 @pytest.mark.parametrize("filename", FIXTURE_FILES)
@@ -92,7 +92,7 @@ def test_failed_calls_have_error_details(cloudtrail_samples_dir: Path) -> None:
     assert all(r["responseElements"] is None for r in failed)
 
 
-# --- safety: synthetic identifiers only ---------------------------------------
+# --- safety: synthetic identifiers only -------------------------------------
 
 
 def test_only_the_example_account_id_is_used(cloudtrail_samples_dir: Path) -> None:
@@ -125,7 +125,7 @@ def test_access_key_ids_are_obviously_fake(cloudtrail_samples_dir: Path) -> None
         assert key_id == "" or "EXAMPLE" in key_id, key_id
 
 
-# --- scenarios that later detector tests rely on ------------------------------
+# --- scenarios that later detector tests rely on ----------------------------
 
 
 def test_normal_activity_attaches_only_a_non_admin_policy(cloudtrail_samples_dir: Path) -> None:

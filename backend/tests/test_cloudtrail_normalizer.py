@@ -58,7 +58,7 @@ def load_events(samples_dir: Path, filename: str) -> list[Event]:
     return result.events
 
 
-# --- fixtures normalize end to end ---------------------------------------------
+# --- fixtures normalize end to end ------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -111,7 +111,7 @@ def test_raw_record_is_preserved_unchanged() -> None:
     assert record == original
 
 
-# --- identity (Task 17) --------------------------------------------------------
+# --- identity ---------------------------------------------------------------
 
 
 def test_root_identity() -> None:
@@ -240,7 +240,7 @@ def test_unexpected_mfa_value_is_an_error() -> None:
         )
 
 
-# --- source IP / region / service (Task 18) ------------------------------------
+# --- source IP / region / service -------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -290,7 +290,7 @@ def test_region_account_and_time_are_mapped() -> None:
     assert event.timestamp == datetime(2026, 10, 5, 9, 0, tzinfo=UTC)
 
 
-# --- failed API calls (Task 19) ------------------------------------------------
+# --- failed API calls -------------------------------------------------------
 
 
 @pytest.mark.parametrize("error_code", ["AccessDenied", "Client.UnauthorizedOperation"])
@@ -324,7 +324,7 @@ def test_failed_console_login_has_no_error_code_but_is_a_failure() -> None:
     assert event.error_message == "Failed authentication"
 
 
-# --- malformed input -----------------------------------------------------------
+# --- malformed input --------------------------------------------------------
 
 
 @pytest.mark.parametrize(
