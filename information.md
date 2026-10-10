@@ -1449,7 +1449,7 @@ Normalized Event
         ↓
 PostgreSQL
         ↓
-Initial deterministic detections (3 in the first slice, growing toward ~10)
+8 deterministic detection rules in the first slice
         ↓
 Findings
         ↓

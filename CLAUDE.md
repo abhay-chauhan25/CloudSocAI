@@ -761,7 +761,7 @@ Stage 0 is complete. The remaining work runs in this order:
 | Day | Date | Stages | Tasks | Outcome |
 |---|---|---|---|---|
 | 1 | Tue 2026-10-06 | 1, 2, 3 | 9–28 | Synthetic CloudTrail → normalized Events → PostgreSQL |
-| 2 | Wed 2026-10-07 | 4, 5, 6 | 29–53 | Detectors → Findings with explainable risk → FastAPI |
+| 2 | Wed 2026-10-07 | 4, 5, 6 | 29–53 | 8 detection rules → Findings with explainable risk → FastAPI |
 | 3 | Thu 2026-10-08 | 9, 10 | 69–87 | Correlation/Incidents + React dashboard — **MVP complete** |
 | 4 | Fri 2026-10-09 | 11, 12 | 88–104 | MITRE ATT&CK mappings + AI analyst |
 | 5 | Sat 2026-10-10 | 13, 8 | 105–115, 61–68 | ML anomaly detection + CSPM checks (mocked) |
@@ -827,6 +827,11 @@ Stage 0 is complete. The remaining work runs in this order:
 34. Test access-key detector.
 35. Implement AdministratorAccess detector.
 36. Test admin-policy detector.
+36a. Implement and test CloudTrail-logging-stopped detector (`StopLogging`).
+36b. Implement and test CloudTrail-trail-deleted detector (`DeleteTrail`).
+36c. Implement and test IAM-user-created detector (`CreateUser`).
+36d. Implement and test console-login-without-MFA detector.
+36e. Add a failed-API-call fixture; implement and test the burst-of-failed-calls detector.
 37. Add detector registry/engine.
 38. Run detectors over normalized events.
 
