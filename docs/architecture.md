@@ -116,11 +116,35 @@ python -m app.ingest <files>
 - **Schema changes only through Alembic migrations.** Constraint names follow a fixed naming convention. A test fails if the models and migrations drift apart.
 - **Configuration** comes from environment variables or the gitignored `.env`; the password is a `SecretStr` and is never written to committed files.
 
+## Finding schema and detection
+
+Defined in `backend/app/schemas/finding.py`; produced by the detectors in `backend/app/detection/` (rules documented in [`detections.md`](detections.md)).
+
+```text
+Events (sorted by time)
+    ↓  run_detectors()        detection/engine.py — every registered detector, failures isolated
+    ↓  Detector.detect()      detection/rules/*.py
+Findings (frozen Pydantic models), sorted by first_seen
+```
+
+| Field | Meaning |
+|---|---|
+| `finding_id` | UUIDv5 of the detector ID + sorted evidence event IDs — deterministic |
+| `detector_id`, `title` | Which rule fired |
+| `severity` | `informational` / `low` / `medium` / `high` / `critical` |
+| `reason` | Plain-English explanation an analyst can verify against the evidence |
+| `first_seen`, `last_seen` | Time range of the evidence (UTC) |
+| `account_id`, `principal`, `principal_arn` | The actor — the correlation keys for incidents |
+| `resource` | What was acted on, when the rule knows it (e.g. `svc-backup`, a trail name) |
+| `event_ids` | Evidence: one event for most rules, many for the burst rule, none for future posture checks |
+
+Findings are produced in memory by `python -m app.detect`; storing them, triage status, and the risk score with its breakdown come next.
+
 ### Open design points (resolved in later tasks)
 
 These are noted now so the schemas are designed deliberately, not discovered late:
 
 - ~~**Event schema (Task 15)**~~ — resolved above.
-- **Finding schema (Task 30):** support zero, one, or many evidence events — not a single required `event_id`.
+- ~~**Finding schema (Task 30)**~~ — resolved above (`event_ids` holds zero or more events).
 - **Risk (Tasks 43–44):** store the score *with* its breakdown so it stays explainable.
 - **Incident schema (Task 69):** decide whether a finding can belong to more than one incident.

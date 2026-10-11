@@ -117,7 +117,7 @@ These ranges are guaranteed never to be routed or assigned, so fixtures can neve
 
 ## Fixtures
 
-All three describe the same fictional account. Times are UTC.
+All four describe the same fictional account. Times are UTC.
 
 ### `normal-user-activity.json` — a normal working day (2026-10-05)
 
@@ -147,7 +147,7 @@ An attacker uses `developer`'s long-term access key (`AKIA...`) from an unfamili
 | 03:06:10 | `developer` | `AttachUserPolicy` **AdministratorAccess** → `svc-backup` | full privileges |
 | 03:07:55 | `svc-backup` | `GetCallerIdentity` | testing the new key, same IP |
 
-**Should trigger:** access-key-created, AdministratorAccess-attached, and later the IAM correlation rule (new credential + privilege change, same actor, within minutes).
+**Should trigger:** iam-user-created, access-key-created, AdministratorAccess-attached, and later the IAM correlation rule (new credential + privilege change, same actor, within minutes).
 
 ### `cloudtrail-disabled.json` — root login and defense evasion (2026-10-06)
 
@@ -158,4 +158,16 @@ An attacker uses `developer`'s long-term access key (`AKIA...`) from an unfamili
 | 22:44 | root | `StopLogging` `management-trail` | blind the defenders |
 | 22:45 | root | `DeleteTrail` `management-trail` | remove the trail entirely |
 
-**Should trigger:** root-account-use, and CloudTrail stopped/deleted (defense evasion — MITRE ATT&CK T1562.008, *Impair Defenses: Disable or Modify Cloud Logs*).
+**Should trigger:** root-account-use (every call), console-login-without-mfa (High: root), and CloudTrail stopped/deleted (defense evasion — MITRE ATT&CK T1562.008, *Impair Defenses: Disable or Modify Cloud Logs*).
+
+### `failed-api-burst.json` — stolen CI key used for discovery (2026-10-07)
+
+`ci-deploy` is a narrowly scoped CI user that normally only fetches an ECR login token from the CI runner. Its key (`AKIA...`) is then used from an unfamiliar IP with a Python SDK script that probes service after service.
+
+| Time | Source IP | Event | Notes |
+|---|---|---|---|
+| 13:00:12 | `198.51.100.40` (CI runner) | ECR `GetAuthorizationToken` | normal CI activity |
+| 14:20:01 | `203.0.113.99` | STS `GetCallerIdentity` | succeeds — needs no permissions |
+| 14:20:03–14:20:12 | `203.0.113.99` | `ListUsers`, `ListRoles`, `ListBuckets`, `DescribeInstances`, `ListSecrets`, `ListFunctions`, `ListTables` | **7 denials across 6 services in 9 seconds** |
+
+**Should trigger:** failed-call-burst (one finding with the 7 denied calls). The single benign failures in the other fixtures must not.

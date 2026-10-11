@@ -15,7 +15,7 @@ from app.config import get_settings
 from app.db import create_db_engine
 from app.models.event import EventRecord
 from app.normalization.cloudtrail import normalize_cloudtrail_records
-from app.repositories.events import count_events, get_event, save_events
+from app.repositories.events import count_events, get_event, list_events, save_events
 from app.schemas.event import Event
 
 pytestmark = pytest.mark.db
@@ -81,6 +81,17 @@ def test_database_itself_rejects_duplicate_event_ids(
 
 def test_saving_nothing_is_a_no_op(db_session: Session) -> None:
     assert save_events(db_session, []) == 0
+
+
+def test_list_events_returns_all_events_oldest_first(
+    db_session: Session, cloudtrail_samples_dir: Path
+) -> None:
+    events = fixture_events(cloudtrail_samples_dir)
+    save_events(db_session, list(reversed(events)))
+
+    listed = list_events(db_session)
+
+    assert listed == sorted(events, key=lambda e: (e.timestamp, e.event_id))
 
 
 def test_unknown_event_id_returns_none(db_session: Session) -> None:

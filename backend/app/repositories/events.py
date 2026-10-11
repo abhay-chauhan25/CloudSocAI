@@ -45,6 +45,18 @@ def get_event(session: Session, event_id: str) -> Event | None:
     return _to_event(record) if record is not None else None
 
 
+def list_events(session: Session) -> list[Event]:
+    """All stored events, oldest first.
+
+    Loads everything into memory, which is fine for a lab-sized dataset. At
+    scale, detection would run over time windows instead (e.g. the last hour).
+    """
+    records = session.scalars(
+        select(EventRecord).order_by(EventRecord.timestamp, EventRecord.event_id)
+    )
+    return [_to_event(record) for record in records]
+
+
 def count_events(session: Session) -> int:
     return session.scalar(select(func.count()).select_from(EventRecord)) or 0
 

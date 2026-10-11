@@ -18,6 +18,7 @@ FIXTURE_FILES = [
     "normal-user-activity.json",
     "iam-privilege-change.json",
     "cloudtrail-disabled.json",
+    "failed-api-burst.json",
 ]
 
 # Fields every fixture record must carry, as real management events do.
@@ -198,3 +199,17 @@ def test_tampering_scenario_is_root_without_mfa(cloudtrail_samples_dir: Path) ->
         "StopLogging",
         "DeleteTrail",
     ]
+
+
+def test_failed_burst_scenario_is_many_denials_after_one_normal_call(
+    cloudtrail_samples_dir: Path,
+) -> None:
+    records = load(cloudtrail_samples_dir, "failed-api-burst.json")
+
+    assert {r["userIdentity"]["userName"] for r in records} == {"ci-deploy"}
+    [ci_call, *attacker_calls] = records
+    assert "errorCode" not in ci_call
+    assert {r["sourceIPAddress"] for r in attacker_calls} == {"203.0.113.99"}
+    failed = [r for r in attacker_calls if "errorCode" in r]
+    assert len(failed) == 7
+    assert len({r["eventSource"] for r in failed}) == 6  # probing many services

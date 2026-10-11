@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, and stored in PostgreSQL. Detection rules, the API, and the dashboard do not exist yet. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules. Storing findings, the API, and the dashboard do not exist yet. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -27,14 +27,16 @@ backend/
   app/
     collectors/     read raw log files
     normalization/  raw CloudTrail records -> Events
-    schemas/        Pydantic data models (Event)
+    schemas/        Pydantic data models (Event, Finding)
+    detection/      detector interface, engine, and rules
     models/         SQLAlchemy database tables
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database
+    detect.py       command: stored events -> detection rules -> findings
   migrations/       Alembic database migrations
   tests/            pytest test suite
 sample-data/        synthetic CloudTrail logs (fake identifiers only)
-docs/               architecture and CloudTrail reference
+docs/               architecture, detection rules, and CloudTrail reference
 docker-compose.yml  local PostgreSQL
 .env.example        configuration template (copy to .env)
 ```
@@ -61,6 +63,9 @@ alembic upgrade head
 
 # 5. Load the sample data (safe to re-run: duplicates are skipped)
 python -m app.ingest ../sample-data/cloudtrail/*.json
+
+# 6. Run the detection rules and print the findings
+python -m app.detect
 ```
 
 ## Running checks
