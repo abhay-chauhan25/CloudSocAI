@@ -6,13 +6,14 @@ the caller owns the transaction.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.models.finding import FindingEvidence, FindingRecord
-from app.schemas.finding import Finding, FindingStatus, StoredFinding
+from app.schemas.finding import Finding, FindingStatus, Severity, StoredFinding
 from app.schemas.risk import RiskAssessment
 
 INSERT_BATCH_SIZE = 1000  # well under PostgreSQL's 65,535 bind-parameter limit
@@ -68,6 +69,46 @@ def list_findings(session: Session) -> list[StoredFinding]:
         select(FindingRecord).order_by(FindingRecord.first_seen, FindingRecord.finding_id)
     )
     return [_to_stored_finding(record) for record in records]
+
+
+FindingSort = Literal["newest", "risk"]
+
+
+def search_findings(
+    session: Session,
+    *,
+    limit: int,
+    offset: int = 0,
+    severity: Severity | None = None,
+    status: FindingStatus | None = None,
+    detector_id: str | None = None,
+    principal: str | None = None,
+    sort: FindingSort = "newest",
+) -> tuple[list[StoredFinding], int]:
+    """One page of findings plus the total number that match.
+
+    ``sort="newest"`` orders by first_seen, latest first; ``sort="risk"``
+    puts the highest risk first, which is the order an analyst triages in.
+    """
+    query = select(FindingRecord)
+    if severity is not None:
+        query = query.where(FindingRecord.severity == severity.value)
+    if status is not None:
+        query = query.where(FindingRecord.status == status.value)
+    if detector_id is not None:
+        query = query.where(FindingRecord.detector_id == detector_id)
+    if principal is not None:
+        query = query.where(FindingRecord.principal == principal)
+
+    total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+    if sort == "risk":
+        order = (FindingRecord.risk_score.desc(), FindingRecord.first_seen.desc())
+    else:
+        order = (FindingRecord.first_seen.desc(),)
+    records = session.scalars(
+        query.order_by(*order, FindingRecord.finding_id).limit(limit).offset(offset)
+    )
+    return [_to_stored_finding(record) for record in records], total
 
 
 def count_findings(session: Session) -> int:

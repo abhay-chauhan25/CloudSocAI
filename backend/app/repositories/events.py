@@ -57,6 +57,37 @@ def list_events(session: Session) -> list[Event]:
     return [_to_event(record) for record in records]
 
 
+def search_events(
+    session: Session,
+    *,
+    limit: int,
+    offset: int = 0,
+    principal: str | None = None,
+    event_name: str | None = None,
+) -> tuple[list[Event], int]:
+    """One page of events, newest first, plus the total number that match."""
+    query = select(EventRecord)
+    if principal is not None:
+        query = query.where(EventRecord.principal == principal)
+    if event_name is not None:
+        query = query.where(EventRecord.event_name == event_name)
+
+    total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+    records = session.scalars(
+        query.order_by(EventRecord.timestamp.desc(), EventRecord.event_id.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return [_to_event(record) for record in records], total
+
+
+def get_events(session: Session, event_ids: Sequence[str]) -> list[Event]:
+    """The events with these IDs, in the order given; unknown IDs are skipped."""
+    records = session.scalars(select(EventRecord).where(EventRecord.event_id.in_(event_ids)))
+    by_id = {record.event_id: _to_event(record) for record in records}
+    return [by_id[event_id] for event_id in event_ids if event_id in by_id]
+
+
 def count_events(session: Session) -> int:
     return session.scalar(select(func.count()).select_from(EventRecord)) or 0
 

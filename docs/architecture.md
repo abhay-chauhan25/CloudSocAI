@@ -196,6 +196,27 @@ python -m app.detect
 - **Idempotent and triage-safe.** Finding IDs are deterministic and inserts use `ON CONFLICT DO NOTHING`, so re-running detection stores nothing new and never resets an analyst's status. Known limitation: a burst that grows between runs gets a new ID (its evidence changed), so it is stored again as a new, larger finding.
 - **One transaction per run.** All findings from a run are stored together or not at all.
 
+## HTTP API
+
+FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`; docs at `http://127.0.0.1:8000/docs`). The API is **read-only**.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /health` | `{"status": "ok", "database": "ok"}`, or **503** with `"unavailable"` when PostgreSQL is unreachable |
+| `GET /events` | Page of event summaries, newest first. Filters: `principal`, `event_name` |
+| `GET /events/{event_id}` | The full Event, including `raw_event` |
+| `GET /findings` | Page of finding summaries (with `risk_score`, `status`, `event_count`). Filters: `severity`, `status`, `detector_id`, `principal`; `sort=newest` (default) or `sort=risk` |
+| `GET /findings/{finding_id}` | Reason, risk breakdown, the rule's description/rationale/MITRE IDs, and evidence event summaries in order |
+
+Design notes:
+
+- **Response models are separate from storage and domain models** (`api/schemas.py`), so a new database column never reaches clients by accident. Lists return summaries (no `raw_event`); detail endpoints return everything.
+- **Pagination:** `limit` (1–200, default 50) and `offset`, with `total` for the matching rows. The cap bounds the work any one request can cause. Offset pagination gets slower deep into large tables and can skip or repeat rows while new data arrives; keyset ("after this timestamp") pagination is the scalable alternative if needed.
+- **Validation:** invalid parameters (out-of-range `limit`, unknown `severity`/`status`/`sort`, over-long strings) are rejected with **422** before any database work. Unknown IDs return **404**.
+- **Failures:** a database outage returns **503** `{"detail": "Database unavailable"}` — driver errors, hosts, and ports are logged, never sent to clients.
+- **Sessions:** one read-only session per request through the `get_session` dependency; tests override it to use the rolled-back test database.
+- **No authentication yet.** The server must only listen on `127.0.0.1` (uvicorn's default), like PostgreSQL. Authentication and API hardening are reviewed before anything is exposed.
+
 ### Open design points (resolved in later tasks)
 
 These are noted now so the schemas are designed deliberately, not discovered late:
