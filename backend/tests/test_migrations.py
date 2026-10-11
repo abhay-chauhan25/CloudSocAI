@@ -37,8 +37,8 @@ def test_migrations_downgrade_and_upgrade_cleanly(
 ) -> None:
     with db_engine.begin() as connection:
         command.downgrade(alembic_config(connection), "base")
-    assert "events" not in inspect(db_engine).get_table_names()
+    assert inspect(db_engine).get_table_names() == ["alembic_version"]
 
     with db_engine.begin() as connection:
         command.upgrade(alembic_config(connection), "head")
-    assert "events" in inspect(db_engine).get_table_names()
+    assert {"events", "findings", "finding_events"} <= set(inspect(db_engine).get_table_names())

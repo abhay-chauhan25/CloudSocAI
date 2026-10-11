@@ -168,7 +168,7 @@ def test_ingest_command_exit_codes(
     finally:
         # main() commits for real, so clean up what it stored.
         with db_engine.begin() as connection:
-            connection.execute(text("TRUNCATE events"))
+            connection.execute(text("TRUNCATE finding_events, findings, events"))
 
 
 def test_ingest_command_reports_unreachable_database(

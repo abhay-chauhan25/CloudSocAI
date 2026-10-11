@@ -138,7 +138,63 @@ Findings (frozen Pydantic models), sorted by first_seen
 | `resource` | What was acted on, when the rule knows it (e.g. `svc-backup`, a trail name) |
 | `event_ids` | Evidence: one event for most rules, many for the burst rule, none for future posture checks |
 
-Findings are produced in memory by `python -m app.detect`; storing them, triage status, and the risk score with its breakdown come next.
+Severity levels, lowest to highest (`Severity.rank` 0–4):
+
+| Severity | Meaning |
+|---|---|
+| informational | Worth recording, not worth reviewing on its own |
+| low | Routine activity that attackers also use (e.g. creating a user) |
+| medium | Unusual or risky; review when time allows |
+| high | Likely dangerous; review promptly |
+| critical | Almost never legitimate; act now (e.g. audit logging stopped) |
+
+## Risk scoring
+
+Defined in `backend/app/risk/scoring.py`. **Severity** is the rule's judgement of the behaviour; **risk** is this occurrence's priority in context.
+
+```text
+risk = base points for severity + context factors, capped to 0–100
+```
+
+| Factor | Points | Applies when |
+|---|---|---|
+| Base severity | 5 / 20 / 40 / 60 / 80 | Always (informational → critical) |
+| New source IP | +15 | The actor first used this IP within the last 24 hours **and** has earlier activity from other addresses |
+| Long-term access key | +5 | The evidence used an `AKIA…` key (never expires; the most commonly leaked credential) |
+| ML anomaly, correlation | — | Added in later stages |
+
+Worked example — the stolen developer key attaching `AdministratorAccess`:
+
+```text
++60  Base severity: high
++15  New source IP: 'developer' first used 203.0.113.50 at 2026-10-06 03:04:12Z
+ +5  Long-term access key: AKIA...MPLE
+ --
+ 80
+```
+
+Design rules:
+
+- **Always explainable.** `RiskAssessment` rejects any score that is not exactly the capped sum of its factors, and each factor carries a sentence citing its evidence.
+- **No double counting.** There is deliberately no "root identity" bonus: the rules already raise severity for root, so adding points again would count the same evidence twice.
+- **No baseline, no penalty.** A principal with no earlier history gets no "new IP" points — unknown is not suspicious. The baseline is only as good as the stored history.
+- **Key IDs are masked** in explanations (`AKIA...MPLE`), as the AWS console does.
+
+## Finding storage
+
+```text
+python -m app.detect
+    → list_events()              all stored events
+    → run_detectors()            findings
+    → score_finding()            RiskAssessment per finding
+    → save_findings()            findings + finding_events tables
+```
+
+- **`findings`** stores the detector output plus `risk_score`, `risk_factors` (JSONB breakdown), `status` (triage: `open`, `acknowledged`, `resolved`, `false_positive`), and `created_at`. Check constraints reject unknown severities/statuses and scores outside 0–100 at the database level.
+- **`finding_events`** is a join table (many-to-many): a finding cites several events, and an event can be evidence for several findings. `position` keeps the detector's evidence order.
+- **Evidence integrity through foreign keys.** A finding cannot cite an event that is not stored, and an event cannot be deleted while a finding cites it (`ON DELETE RESTRICT`).
+- **Idempotent and triage-safe.** Finding IDs are deterministic and inserts use `ON CONFLICT DO NOTHING`, so re-running detection stores nothing new and never resets an analyst's status. Known limitation: a burst that grows between runs gets a new ID (its evidence changed), so it is stored again as a new, larger finding.
+- **One transaction per run.** All findings from a run are stored together or not at all.
 
 ### Open design points (resolved in later tasks)
 
@@ -146,5 +202,5 @@ These are noted now so the schemas are designed deliberately, not discovered lat
 
 - ~~**Event schema (Task 15)**~~ — resolved above.
 - ~~**Finding schema (Task 30)**~~ — resolved above (`event_ids` holds zero or more events).
-- **Risk (Tasks 43–44):** store the score *with* its breakdown so it stays explainable.
+- ~~**Risk (Tasks 43–44)**~~ — resolved above (score stored with its factor breakdown).
 - **Incident schema (Task 69):** decide whether a finding can belong to more than one incident.

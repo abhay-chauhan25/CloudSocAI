@@ -2,7 +2,7 @@
 
 CloudSOC's detections are deterministic rules over normalized [Events](architecture.md#normalized-event-schema). Each rule lives in `backend/app/detection/rules/`, is registered in `backend/app/detection/registry.py`, and has positive and negative tests in `backend/tests/test_detectors.py`.
 
-Run them over the stored events:
+Run them over the stored events (findings are scored and stored; see [risk scoring](architecture.md#risk-scoring)):
 
 ```bash
 cd backend && python -m app.detect

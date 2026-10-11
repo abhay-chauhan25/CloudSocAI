@@ -15,7 +15,7 @@ class EventRecord(Base):
 
     __tablename__ = "events"
 
-    # Surrogate key for internal references (findings will point at this).
+    # Surrogate key. Findings reference events by the stable event_id instead.
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     # Provider event ID. UNIQUE makes duplicate ingestion impossible at the
     # database level, not just unlikely in application code.

@@ -13,19 +13,42 @@ from typing import Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.risk import RiskAssessment
+
 # Fixed namespace for deterministic finding IDs. Changing it would change
 # every finding ID, so it must stay constant.
 FINDING_ID_NAMESPACE = uuid.UUID("6f9d1c2e-3b4a-5d6e-8f70-91a2b3c4d5e6")
 
 
 class Severity(StrEnum):
-    """How strongly a finding suggests malicious or dangerous activity."""
+    """How strongly the detected behaviour, on its own, suggests danger.
+
+    informational  worth recording, not worth reviewing on its own
+    low            routine activity that attackers also use (e.g. creating a user)
+    medium         unusual or risky; review when time allows
+    high           likely dangerous; review promptly
+    critical       almost never legitimate; act now (e.g. audit logging stopped)
+    """
 
     INFORMATIONAL = "informational"
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+    @property
+    def rank(self) -> int:
+        """0 (informational) to 4 (critical), for sorting and filtering."""
+        return list(Severity).index(self)
+
+
+class FindingStatus(StrEnum):
+    """Analyst triage state. Changing it never changes the evidence."""
+
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+    FALSE_POSITIVE = "false_positive"
 
 
 def make_finding_id(detector_id: str, event_ids: Iterable[str]) -> str:
@@ -73,3 +96,14 @@ class Finding(BaseModel):
         if self.last_seen < self.first_seen:
             raise ValueError("last_seen must not be earlier than first_seen")
         return self
+
+
+class StoredFinding(BaseModel):
+    """A finding as kept in the database: the detector's output plus what was added later."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    finding: Finding
+    risk: RiskAssessment
+    status: FindingStatus
+    created_at: AwareDatetime = Field(description="When CloudSOC stored the finding")

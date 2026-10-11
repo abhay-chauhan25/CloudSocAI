@@ -30,15 +30,21 @@ def test_detect_command_prints_findings_for_stored_events(
         capsys.readouterr()
 
         assert detect.main([]) == detect.EXIT_OK
+        first_run = capsys.readouterr().out
+        assert detect.main([]) == detect.EXIT_OK
+        second_run = capsys.readouterr().out
+        with db_engine.connect() as connection:
+            stored = connection.scalar(text("SELECT count(*) FROM findings"))
     finally:
         # The commands commit for real, so clean up what they stored.
         with db_engine.begin() as connection:
-            connection.execute(text("TRUNCATE events"))
+            connection.execute(text("TRUNCATE finding_events, findings, events"))
 
-    output = capsys.readouterr().out
-    assert output.startswith("4 events analysed, 7 findings")
-    assert "[CRITICAL] CloudTrail logging stopped (cloudtrail-logging-stopped)" in output
-    assert "[HIGH] Console sign-in without MFA" in output
+    assert stored == 7
+    assert first_run.startswith("4 events analysed, 7 findings (7 new, 0 already stored)")
+    assert second_run.startswith("4 events analysed, 7 findings (0 new, 7 already stored)")
+    assert "[CRITICAL] risk  80  CloudTrail logging stopped" in first_run
+    assert "+80  Base severity: critical" in first_run
 
 
 def test_detect_command_reports_unreachable_database(monkeypatch: pytest.MonkeyPatch) -> None:
