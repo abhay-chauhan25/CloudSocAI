@@ -18,7 +18,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api.routes import events, findings, health
+from app.api.routes import events, findings, health, incidents
 from app.db import create_db_engine, create_session_factory
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def database_unavailable(request: Request, exc: Exception) -> JSONResponse
 def create_app() -> FastAPI:
     app = FastAPI(
         title="CloudSOC AI",
-        summary="Read-only API for CloudSOC events and findings (portfolio prototype).",
+        summary="Read-only API for CloudSOC events, findings, and incidents (portfolio prototype).",
         version="0.1.0",
         lifespan=lifespan,
     )
@@ -53,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(events.router)
     app.include_router(findings.router)
+    app.include_router(incidents.router)
     return app
 
 

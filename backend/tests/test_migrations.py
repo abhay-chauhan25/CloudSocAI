@@ -41,4 +41,6 @@ def test_migrations_downgrade_and_upgrade_cleanly(
 
     with db_engine.begin() as connection:
         command.upgrade(alembic_config(connection), "head")
-    assert {"events", "findings", "finding_events"} <= set(inspect(db_engine).get_table_names())
+    assert {"events", "findings", "finding_events", "incidents", "incident_findings"} <= set(
+        inspect(db_engine).get_table_names()
+    )

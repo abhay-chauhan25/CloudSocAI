@@ -48,4 +48,4 @@ Severity reflects how strongly the evidence alone suggests danger: creating a us
 
 ## Overlapping findings
 
-One event can produce several findings. Root's `StopLogging` call produces both `root-account-use` and `cloudtrail-logging-stopped`. This is intentional: each rule answers a different question. Grouping them into one investigation is the correlation engine's job (Incidents).
+One event can produce several findings. Root's `StopLogging` call produces both `root-account-use` and `cloudtrail-logging-stopped`. This is intentional: each rule answers a different question. Grouping them into one investigation is the correlation engine's job — see [Correlation and incidents](architecture.md#correlation-and-incidents).

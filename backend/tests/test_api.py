@@ -11,6 +11,7 @@ from app.api.deps import get_session
 from app.api.main import create_app
 from app.collectors.cloudtrail_file import load_cloudtrail_file
 from app.config import get_settings
+from app.correlation.service import run_correlation
 from app.db import create_db_engine, create_session_factory
 from app.detection.engine import run_detectors
 from app.normalization.cloudtrail import normalize_cloudtrail_records
@@ -38,7 +39,7 @@ def client(db_session: Session) -> Iterator[TestClient]:
 
 @pytest.fixture
 def seeded(db_session: Session, cloudtrail_samples_dir: Path) -> list[Event]:
-    """All fixture events stored, with their detected and scored findings."""
+    """All fixture events stored, with their scored findings and incidents."""
     events: list[Event] = []
     for path in sorted(cloudtrail_samples_dir.glob("*.json")):
         events += normalize_cloudtrail_records(load_cloudtrail_file(path)).events
@@ -48,6 +49,7 @@ def seeded(db_session: Session, cloudtrail_samples_dir: Path) -> list[Event]:
         db_session,
         [ScoredFinding(f, score_finding(f, context)) for f in run_detectors(events).findings],
     )
+    run_correlation(db_session)
     return events
 
 
@@ -191,6 +193,86 @@ def test_unknown_finding_is_404(client: TestClient) -> None:
     assert response.json() == {"detail": "Finding not found"}
 
 
+# --- incidents -----------------------------------------------------------------
+
+
+def incident_id_for(client: TestClient, pattern_id: str) -> str:
+    items = client.get("/incidents").json()["items"]
+    return next(i["incident_id"] for i in items if i["pattern_id"] == pattern_id)
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incidents_list(client: TestClient) -> None:
+    body = client.get("/incidents", params={"sort": "risk"}).json()
+
+    assert body["total"] == 3
+    assert [(i["title"], i["risk_score"], i["finding_count"]) for i in body["items"]] == [
+        ("Audit logging tampered: root", 95, 7),
+        ("Possible IAM persistence: developer", 90, 3),
+        ("Possible stolen credential probing: ci-deploy", 60, 1),
+    ]
+    assert {i["status"] for i in body["items"]} == {"open"}
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incidents_newest_first_and_filters(client: TestClient) -> None:
+    newest = client.get("/incidents").json()["items"]
+    critical = client.get("/incidents", params={"severity": "critical"}).json()
+    by_actor = client.get("/incidents", params={"principal": "developer"}).json()
+
+    last_seen = [i["last_seen"] for i in newest]
+    assert last_seen == sorted(last_seen, reverse=True)
+    assert [i["principal"] for i in critical["items"]] == ["root"]
+    assert by_actor["total"] == 1
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incident_detail_has_risk_findings_and_timeline(client: TestClient) -> None:
+    body = client.get(f"/incidents/{incident_id_for(client, 'iam-persistence')}").json()
+
+    assert body["risk"]["score"] == 90
+    assert [f["points"] for f in body["risk"]["factors"]] == [80, 5, 5]
+    assert [f["detector_id"] for f in body["findings"]] == [
+        "iam-user-created",
+        "access-key-created",
+        "admin-policy-attached",
+    ]
+    assert "Possible IAM persistence" in body["title"]
+    assert "3 finding(s) for 'developer'" in body["summary"]
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incident_timeline_includes_unflagged_reconnaissance(client: TestClient) -> None:
+    body = client.get(f"/incidents/{incident_id_for(client, 'iam-persistence')}").json()
+
+    timeline = [(t["event"]["event_name"], t["flagged"]) for t in body["timeline"]]
+    assert timeline == [
+        ("GetCallerIdentity", False),
+        ("ListAttachedUserPolicies", False),
+        ("ListSecrets", False),
+        ("CreateUser", True),
+        ("CreateAccessKey", True),
+        ("AttachUserPolicy", True),
+    ]
+    # The backdoor user's own activity belongs to a different actor.
+    assert all(t["event"]["principal"] == "developer" for t in body["timeline"])
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incident_timeline_marks_events_flagged_by_several_rules(client: TestClient) -> None:
+    body = client.get(f"/incidents/{incident_id_for(client, 'audit-logging-tampered')}").json()
+
+    stop_logging = next(t for t in body["timeline"] if t["event"]["event_name"] == "StopLogging")
+    assert stop_logging["detector_ids"] == ["cloudtrail-logging-stopped", "root-account-use"]
+
+
+def test_unknown_incident_is_404(client: TestClient) -> None:
+    response = client.get("/incidents/no-such-incident")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Incident not found"}
+
+
 # --- validation ----------------------------------------------------------------
 
 
@@ -206,6 +288,9 @@ def test_unknown_finding_is_404(client: TestClient) -> None:
         ("/findings", {"status": "closed"}),
         ("/findings", {"sort": "random"}),
         ("/findings", {"limit": 201}),
+        ("/incidents", {"status": "closed"}),
+        ("/incidents", {"sort": "random"}),
+        ("/incidents", {"offset": -1}),
     ],
 )
 def test_invalid_parameters_are_rejected_with_422(

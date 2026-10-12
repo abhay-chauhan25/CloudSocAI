@@ -196,6 +196,54 @@ python -m app.detect
 - **Idempotent and triage-safe.** Finding IDs are deterministic and inserts use `ON CONFLICT DO NOTHING`, so re-running detection stores nothing new and never resets an analyst's status. Known limitation: a burst that grows between runs gets a new ID (its evidence changed), so it is stored again as a new, larger finding.
 - **One transaction per run.** All findings from a run are stored together or not at all.
 
+## Correlation and incidents
+
+Code in `backend/app/correlation/`; run as the last step of `python -m app.detect`.
+
+```text
+open incidents + findings in no incident (excluding false positives)
+    ↓ group_findings()        same actor, each finding ≤ 1 hour from the group
+    ↓ qualifies_as_incident() ≥ 2 findings, or 1 finding that is High+ or risk ≥ 60
+    ↓ build_incident()        pattern → title, highest severity, incident risk
+    ↓ save_incident()         insert or update; status is never overwritten
+incidents + incident_findings tables
+```
+
+**Correlation key and window.** Findings are grouped by actor (`principal_arn`) when each is within **1 hour** of the group. A shorter window misses slow attacks; a longer one merges unrelated activity. Chains are followed: findings 50 minutes apart keep extending the same incident.
+
+**Patterns** (`correlation/patterns.py`) name a group by which rules fired in it, checked in order:
+
+| Pattern | Matches when | Example |
+|---|---|---|
+| Audit logging tampered | `cloudtrail-logging-stopped` or `cloudtrail-trail-deleted` | root stops then deletes the trail |
+| Possible IAM persistence | ≥ 2 of `iam-user-created`, `access-key-created`, `admin-policy-attached` | developer creates `svc-backup`, gives it a key and admin |
+| Root account activity | `root-account-use` | |
+| Possible stolen credential probing | `failed-call-burst` | ci-deploy's key probing 6 services |
+| Related suspicious activity | anything else (catch-all) | |
+
+**Incident risk** = the highest finding risk + **5 for each additional distinct rule**, capped at 100, stored with its breakdown. Summing finding scores would hit 100 almost immediately; repeated findings from the same rule add nothing because they are not independent corroboration.
+
+```text
+Possible IAM persistence: developer           Audit logging tampered: root
+ +80  admin-policy-attached scored 80          +80  cloudtrail-logging-stopped scored 80
+  +5  access-key-created                        +5  cloudtrail-trail-deleted
+  +5  iam-user-created                          +5  console-login-without-mfa
+  --                                            +5  root-account-use (4 findings)
+  90                                            --
+                                                95
+```
+
+**Lifecycle rules:**
+
+- A finding belongs to **at most one incident**: `incident_findings.finding_id` is the primary key, so PostgreSQL enforces it.
+- New findings join **open** or **investigating** incidents; the title, time range, and risk are recalculated and `updated_at` changes. **Resolved** and **false-positive** incidents never reopen — new activity starts a new incident.
+- Findings an analyst marked **false positive** are never correlated.
+- A lone low-risk finding stays unassigned and is reconsidered on the next run, when a related finding may have arrived.
+- Incident IDs are derived from the earliest finding, so correlating from scratch reproduces the same IDs.
+- Known limitation: a new finding that falls between two existing incidents joins one of them; the two are not merged.
+
+**Timeline.** `GET /incidents/{id}` returns every event by the actor from 1 hour before the first finding to 1 hour after the last, with the flagged ones marked. For the developer incident it shows the unflagged reconnaissance (`GetCallerIdentity`, `ListAttachedUserPolicies`, the denied `ListSecrets`) before the three flagged IAM changes.
+
 ## HTTP API
 
 FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`; docs at `http://127.0.0.1:8000/docs`). The API is **read-only**.
@@ -207,6 +255,8 @@ FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`;
 | `GET /events/{event_id}` | The full Event, including `raw_event` |
 | `GET /findings` | Page of finding summaries (with `risk_score`, `status`, `event_count`). Filters: `severity`, `status`, `detector_id`, `principal`; `sort=newest` (default) or `sort=risk` |
 | `GET /findings/{finding_id}` | Reason, risk breakdown, the rule's description/rationale/MITRE IDs, and evidence event summaries in order |
+| `GET /incidents` | Page of incident summaries (title, severity, `risk_score`, `status`, `finding_count`). Filters: `status`, `severity`, `principal`; `sort=newest` (by latest activity) or `sort=risk` |
+| `GET /incidents/{incident_id}` | Summary, risk breakdown, member findings, and the actor's timeline |
 
 Design notes:
 
@@ -224,4 +274,4 @@ These are noted now so the schemas are designed deliberately, not discovered lat
 - ~~**Event schema (Task 15)**~~ — resolved above.
 - ~~**Finding schema (Task 30)**~~ — resolved above (`event_ids` holds zero or more events).
 - ~~**Risk (Tasks 43–44)**~~ — resolved above (score stored with its factor breakdown).
-- **Incident schema (Task 69):** decide whether a finding can belong to more than one incident.
+- ~~**Incident schema (Task 69)**~~ — resolved above (at most one incident per finding).

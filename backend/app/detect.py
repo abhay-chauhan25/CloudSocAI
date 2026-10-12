@@ -1,11 +1,12 @@
-"""Run the detection rules over the stored events, then score and store the findings.
+"""The analysis pipeline: detect, score, store findings, and correlate incidents.
 
 Usage (from backend/, with the database running and events ingested):
 
     python -m app.detect
 
-Safe to re-run: findings that are already stored are skipped, so their
-triage status is never reset. Exits non-zero if any detector failed.
+Safe to re-run: findings already stored are skipped and incidents only change
+when new findings join them, so analyst triage decisions are never reset.
+Exits non-zero if any detector failed.
 """
 
 import argparse
@@ -14,6 +15,7 @@ import sys
 
 from sqlalchemy.exc import OperationalError
 
+from app.correlation.service import CorrelationReport, run_correlation
 from app.db import create_db_engine, create_session_factory
 from app.detection.engine import DetectionResult, run_detectors
 from app.repositories.events import list_events
@@ -28,7 +30,11 @@ EXIT_DATABASE_UNAVAILABLE = 2
 
 
 def format_report(
-    result: DetectionResult, scored: list[ScoredFinding], event_count: int, stored: int
+    result: DetectionResult,
+    scored: list[ScoredFinding],
+    event_count: int,
+    stored: int,
+    correlation: CorrelationReport,
 ) -> str:
     lines = [
         f"{event_count} events analysed, {len(scored)} findings "
@@ -46,6 +52,18 @@ def format_report(
         lines.append(f"    evidence: {', '.join(finding.event_ids)}")
     for failure in result.failures:
         lines.append(f"\nDETECTOR FAILED: {failure.detector_id} ({failure.error})")
+
+    lines.append(
+        f"\nIncidents: {len(correlation.created)} created, {len(correlation.updated)} updated"
+    )
+    for label, incidents in (("NEW", correlation.created), ("UPDATED", correlation.updated)):
+        for incident in incidents:
+            lines.append(
+                f"\n{label} [{incident.severity.upper()}] risk {incident.risk.score:>3}  "
+                f"{incident.title}  ({len(incident.finding_ids)} findings)"
+            )
+            for factor in incident.risk.factors:
+                lines.append(f"    {factor.points:+4d}  {factor.name}: {factor.explanation}")
     return "\n".join(lines)
 
 
@@ -57,20 +75,21 @@ def main(argv: list[str] | None = None) -> int:
     engine = create_db_engine()
     sessions = create_session_factory(engine)
     try:
-        # One transaction: the findings are stored all together or not at all.
+        # One transaction: findings and incidents are stored together or not at all.
         with sessions.begin() as session:
             events = list_events(session)
             result = run_detectors(events)
             context = RiskContext.from_events(events)
             scored = [ScoredFinding(f, score_finding(f, context)) for f in result.findings]
             stored = save_findings(session, scored)
+            correlation = run_correlation(session)
     except OperationalError as exc:
         logger.error("database unavailable (is `docker compose up -d` running?): %s", exc.orig)
         return EXIT_DATABASE_UNAVAILABLE
     finally:
         engine.dispose()
 
-    print(format_report(result, scored, len(events), stored))
+    print(format_report(result, scored, len(events), stored, correlation))
     return EXIT_DETECTOR_FAILED if result.failures else EXIT_OK
 
 

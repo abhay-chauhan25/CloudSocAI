@@ -6,6 +6,7 @@ take a Session and do not commit: the caller owns the transaction.
 """
 
 from collections.abc import Sequence
+from datetime import datetime
 from ipaddress import ip_address
 
 from sqlalchemy import func, select
@@ -86,6 +87,29 @@ def get_events(session: Session, event_ids: Sequence[str]) -> list[Event]:
     records = session.scalars(select(EventRecord).where(EventRecord.event_id.in_(event_ids)))
     by_id = {record.event_id: _to_event(record) for record in records}
     return [by_id[event_id] for event_id in event_ids if event_id in by_id]
+
+
+def list_actor_events(
+    session: Session,
+    *,
+    principal_arn: str | None,
+    principal: str | None,
+    start: datetime,
+    end: datetime,
+) -> list[Event]:
+    """Everything one actor did between ``start`` and ``end``, oldest first."""
+    if principal_arn is not None:
+        actor = EventRecord.principal_arn == principal_arn
+    elif principal is not None:
+        actor = EventRecord.principal == principal
+    else:
+        return []
+    records = session.scalars(
+        select(EventRecord)
+        .where(actor, EventRecord.timestamp >= start, EventRecord.timestamp <= end)
+        .order_by(EventRecord.timestamp, EventRecord.event_id)
+    )
+    return [_to_event(record) for record in records]
 
 
 def count_events(session: Session) -> int:

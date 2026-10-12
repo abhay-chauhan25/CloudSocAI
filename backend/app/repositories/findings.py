@@ -111,6 +111,15 @@ def search_findings(
     return [_to_stored_finding(record) for record in records], total
 
 
+def get_findings(session: Session, finding_ids: Sequence[str]) -> list[StoredFinding]:
+    """The findings with these IDs, in the order given; unknown IDs are skipped."""
+    records = session.scalars(
+        select(FindingRecord).where(FindingRecord.finding_id.in_(finding_ids))
+    )
+    by_id = {record.finding_id: _to_stored_finding(record) for record in records}
+    return [by_id[finding_id] for finding_id in finding_ids if finding_id in by_id]
+
+
 def count_findings(session: Session) -> int:
     return session.scalar(select(func.count()).select_from(FindingRecord)) or 0
 

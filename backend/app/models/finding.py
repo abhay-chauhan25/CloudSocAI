@@ -22,7 +22,7 @@ from app.db import Base
 from app.schemas.finding import FindingStatus, Severity
 
 
-def _one_of(column: str, values: list[str]) -> str:
+def one_of(column: str, values: list[str]) -> str:
     allowed = ", ".join(f"'{value}'" for value in values)
     return f"{column} IN ({allowed})"
 
@@ -33,8 +33,8 @@ class FindingRecord(Base):
     __tablename__ = "findings"
     __table_args__ = (
         # Enforced by the database too, so no writer can store an unknown value.
-        CheckConstraint(_one_of("severity", [s.value for s in Severity]), name="severity"),
-        CheckConstraint(_one_of("status", [s.value for s in FindingStatus]), name="status"),
+        CheckConstraint(one_of("severity", [s.value for s in Severity]), name="severity"),
+        CheckConstraint(one_of("status", [s.value for s in FindingStatus]), name="status"),
         CheckConstraint("risk_score BETWEEN 0 AND 100", name="risk_score"),
         CheckConstraint("last_seen >= first_seen", name="time_range"),
     )

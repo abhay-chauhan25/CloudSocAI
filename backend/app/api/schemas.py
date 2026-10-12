@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from app.detection.base import Detector
 from app.schemas.event import Event, PrincipalType
 from app.schemas.finding import FindingStatus, Severity, StoredFinding
+from app.schemas.incident import IncidentStatus, StoredIncident
 from app.schemas.risk import RiskAssessment
 
 
@@ -112,6 +113,62 @@ class FindingDetail(BaseModel):
     # None if the rule that produced the finding no longer exists.
     detector: DetectorInfo | None
     evidence: list[EventSummary]
+
+
+class IncidentSummary(BaseModel):
+    incident_id: str
+    pattern_id: str
+    title: str
+    severity: Severity
+    risk_score: int
+    status: IncidentStatus
+    first_seen: datetime
+    last_seen: datetime
+    principal: str | None
+    finding_count: int
+
+    @classmethod
+    def from_stored(cls, stored: StoredIncident) -> "IncidentSummary":
+        incident = stored.incident
+        return cls(
+            incident_id=incident.incident_id,
+            pattern_id=incident.pattern_id,
+            title=incident.title,
+            severity=incident.severity,
+            risk_score=incident.risk.score,
+            status=stored.status,
+            first_seen=incident.first_seen,
+            last_seen=incident.last_seen,
+            principal=incident.principal,
+            finding_count=len(incident.finding_ids),
+        )
+
+
+class TimelineItem(BaseModel):
+    """One event in an incident's timeline; ``detector_ids`` is empty for context events."""
+
+    event: EventSummary
+    flagged: bool
+    detector_ids: list[str]
+
+
+class IncidentDetail(BaseModel):
+    incident_id: str
+    pattern_id: str
+    title: str
+    summary: str
+    severity: Severity
+    status: IncidentStatus
+    first_seen: datetime
+    last_seen: datetime
+    created_at: datetime
+    updated_at: datetime
+    account_id: str | None
+    principal: str | None
+    principal_arn: str | None
+    risk: RiskAssessment
+    findings: list[FindingSummary]
+    timeline: list[TimelineItem]
 
 
 class HealthStatus(BaseModel):

@@ -38,13 +38,18 @@ def test_detect_command_prints_findings_for_stored_events(
     finally:
         # The commands commit for real, so clean up what they stored.
         with db_engine.begin() as connection:
-            connection.execute(text("TRUNCATE finding_events, findings, events"))
+            connection.execute(
+                text("TRUNCATE incident_findings, incidents, finding_events, findings, events")
+            )
 
     assert stored == 7
     assert first_run.startswith("4 events analysed, 7 findings (7 new, 0 already stored)")
     assert second_run.startswith("4 events analysed, 7 findings (0 new, 7 already stored)")
     assert "[CRITICAL] risk  80  CloudTrail logging stopped" in first_run
     assert "+80  Base severity: critical" in first_run
+    assert "Incidents: 1 created, 0 updated" in first_run
+    assert "NEW [CRITICAL] risk  95  Audit logging tampered: root  (7 findings)" in first_run
+    assert "Incidents: 0 created, 0 updated" in second_run
 
 
 def test_detect_command_reports_unreachable_database(monkeypatch: pytest.MonkeyPatch) -> None:

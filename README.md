@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules that produce stored findings with explainable risk scores, served by a read-only REST API. The dashboard does not exist yet. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API. The dashboard does not exist yet. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -30,11 +30,12 @@ backend/
     schemas/        Pydantic data models (Event, Finding, RiskAssessment)
     detection/      detector interface, engine, and rules
     risk/           explainable risk scoring
-    api/            FastAPI app: /health, /events, /findings
+    correlation/    findings -> incidents, timelines
+    api/            FastAPI app: /health, /events, /findings, /incidents
     models/         SQLAlchemy database tables
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database
-    detect.py       command: stored events -> rules -> scored findings -> database
+    detect.py       command: stored events -> rules -> scored findings -> incidents
   migrations/       Alembic database migrations
   tests/            pytest test suite
 sample-data/        synthetic CloudTrail logs (fake identifiers only)
@@ -66,7 +67,7 @@ alembic upgrade head
 # 5. Load the sample data (safe to re-run: duplicates are skipped)
 python -m app.ingest ../sample-data/cloudtrail/*.json
 
-# 6. Run the detection rules; findings are scored, stored, and printed (safe to re-run)
+# 6. Detect, score, and store findings, then correlate them into incidents (safe to re-run)
 python -m app.detect
 
 # 7. Start the API (listens on 127.0.0.1 only), then open http://127.0.0.1:8000/docs
