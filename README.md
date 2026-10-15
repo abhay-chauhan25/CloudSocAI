@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API. The dashboard does not exist yet. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API and a React dashboard. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -38,6 +38,7 @@ backend/
     detect.py       command: stored events -> rules -> scored findings -> incidents
   migrations/       Alembic database migrations
   tests/            pytest test suite
+frontend/           React + TypeScript dashboard (Vite)
 sample-data/        synthetic CloudTrail logs (fake identifiers only)
 docs/               architecture, detection rules, and CloudTrail reference
 docker-compose.yml  local PostgreSQL
@@ -46,7 +47,7 @@ docker-compose.yml  local PostgreSQL
 
 ## Local setup
 
-Requirements: **Python 3.12+** and **Docker**. No AWS account is needed — everything runs on synthetic data.
+Requirements: **Python 3.12+**, **Node.js 20.19+**, and **Docker**. No AWS account is needed — everything runs on synthetic data.
 
 ```bash
 # 1. Configuration: copy the template and set your own password
@@ -74,6 +75,14 @@ python -m app.detect
 uvicorn app.api.main:app --reload
 ```
 
+In a second terminal, start the dashboard:
+
+```bash
+cd frontend
+npm install
+npm run dev             # http://127.0.0.1:5173 (calls the API through Vite's /api proxy)
+```
+
 ## Running checks
 
 From `backend/` with the virtual environment activated:
@@ -83,6 +92,14 @@ pytest                  # run the test suite (database tests use a separate *_te
                         # and are skipped with a message if PostgreSQL is not running)
 ruff check .            # lint (includes security rules from flake8-bandit)
 ruff format --check .   # verify formatting (use `ruff format .` to fix)
+```
+
+From `frontend/`:
+
+```bash
+npm run typecheck       # TypeScript, strict mode
+npm test                # component and API-client tests (Vitest + Testing Library)
+npm run build           # production build into dist/
 ```
 
 ## Roadmap

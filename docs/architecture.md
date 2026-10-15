@@ -267,6 +267,33 @@ Design notes:
 - **Sessions:** one read-only session per request through the `get_session` dependency; tests override it to use the rolled-back test database.
 - **No authentication yet.** The server must only listen on `127.0.0.1` (uvicorn's default), like PostgreSQL. Authentication and API hardening are reviewed before anything is exposed.
 
+## Dashboard (frontend)
+
+React 19 + TypeScript + Vite in `frontend/`. It only displays data; every decision (detection, risk, correlation) is made by the backend.
+
+```text
+Browser ── http://127.0.0.1:5173/api/incidents ──▶ Vite dev server ── /incidents ──▶ FastAPI :8000
+           (same origin as the page)               (proxy strips /api)
+```
+
+| Page | URL | Shows |
+|---|---|---|
+| Overview | `/` | API/database health, open incidents, findings per severity, event count, top 5 incidents by risk |
+| Incidents | `/incidents?status=&severity=&sort=&offset=` | Filterable, paginated incident list |
+| Incident detail | `/incidents/:id` | Summary, risk breakdown, facts, member findings, timeline (flagged vs context events) |
+| Findings | `/findings?severity=&status=&sort=&offset=` | Filterable, paginated finding list |
+| Finding detail | `/findings/:id` | Reason, risk breakdown, the rule's description/rationale/MITRE IDs, evidence events |
+
+Design notes:
+
+- **No CORS.** The dev server proxies `/api` to FastAPI, so the browser only talks to one origin and the backend sends no CORS headers. In a deployment, a reverse proxy plays the same role.
+- **One API module.** `src/api/client.ts` is the only code that calls `fetch`. IDs placed in paths are URL-encoded, and failures become an `ApiError` with a user-safe message (404, 503 "database unavailable", status 0 "backend not reachable"); response bodies are never shown.
+- **`useApi` hook.** Loading / error / success states, and an `AbortController` so a slow response for an old filter can never overwrite newer data.
+- **Filters live in the URL**, so views can be bookmarked, shared, and navigated with the back button. URL values are validated against the known enums and fall back to defaults.
+- **Untrusted text.** Titles, reasons, and timeline fields contain attacker-controlled values. React escapes all text, and the app never uses `dangerouslySetInnerHTML`; a test renders a title containing an `<img onerror>` payload and checks no element is created.
+- **Types** in `src/api/types.ts` are hand-written mirrors of the API response models. Generating them from FastAPI's OpenAPI schema is the scalable alternative.
+- **Dependencies are pinned to exact versions**, each published at least two weeks before it was added, and locked in `package-lock.json`.
+
 ### Open design points (resolved in later tasks)
 
 These are noted now so the schemas are designed deliberately, not discovered late:
