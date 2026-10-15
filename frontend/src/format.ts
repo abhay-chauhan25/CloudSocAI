@@ -11,8 +11,8 @@ export function formatPoints(points: number): string {
   return points >= 0 ? `+${points}` : `${points}`;
 }
 
-/** "false_positive" -> "False positive" */
+/** "false_positive" -> "False positive", "iam-persistence" -> "Iam persistence" */
 export function formatLabel(value: string): string {
-  const words = value.replaceAll("_", " ");
+  const words = value.replace(/[_-]/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }

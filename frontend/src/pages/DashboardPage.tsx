@@ -4,7 +4,7 @@ import { api } from "../api/client";
 import { SEVERITIES } from "../api/types";
 import { RiskScore, SeverityBadge, StatusBadge } from "../components/Badges";
 import { Empty, ErrorMessage, Loading } from "../components/States";
-import { formatLabel, formatTime } from "../format";
+import { formatTime } from "../format";
 import { useApi } from "../hooks/useApi";
 
 async function loadDashboard(signal: AbortSignal) {
@@ -84,9 +84,7 @@ export function DashboardPage() {
                   <Link to={`/incidents/${encodeURIComponent(incident.incident_id)}`}>
                     {incident.title}
                   </Link>
-                  <div className="muted">
-                    {incident.finding_count} finding(s) · {formatLabel(incident.pattern_id)}
-                  </div>
+                  <div className="muted">{incident.finding_count} finding(s)</div>
                 </td>
                 <td>
                   <SeverityBadge severity={incident.severity} />
