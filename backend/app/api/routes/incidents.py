@@ -17,13 +17,9 @@ from app.api.schemas import (
     TechniqueInfo,
     TimelineItem,
 )
-from app.correlation.timeline import build_timeline, timeline_range
-from app.detection.registry import DETECTORS_BY_ID
-from app.mitre.catalog import TECHNIQUES, tactic_rank
-from app.repositories.events import get_events, list_actor_events
-from app.repositories.findings import get_findings
-from app.repositories.incidents import IncidentSort, get_incident, search_incidents
-from app.schemas.finding import Severity, StoredFinding
+from app.correlation.view import load_incident_view
+from app.repositories.incidents import IncidentSort, search_incidents
+from app.schemas.finding import Severity
 from app.schemas.incident import IncidentStatus
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -61,26 +57,13 @@ def list_incidents(
 def read_incident(
     incident_id: str, session: Annotated[Session, Depends(get_session)]
 ) -> IncidentDetail:
-    """One incident with its risk breakdown, findings, and the actor's timeline."""
-    stored = get_incident(session, incident_id)
-    if stored is None:
+    """One incident with its risk breakdown, findings, techniques, and the actor's timeline."""
+    view = load_incident_view(session, incident_id)
+    if view is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Incident not found")
 
+    stored = view.stored
     incident = stored.incident
-    findings = get_findings(session, incident.finding_ids)
-    start, end = timeline_range(incident)
-    actor_events = list_actor_events(
-        session,
-        principal_arn=incident.principal_arn,
-        principal=incident.principal,
-        start=start,
-        end=end,
-    )
-    # Evidence is always on the timeline, even if it falls outside the actor query.
-    known = {event.event_id for event in actor_events}
-    evidence_ids = [i for f in findings for i in f.finding.event_ids if i not in known]
-    timeline = build_timeline(findings, actor_events + get_events(session, evidence_ids))
-
     return IncidentDetail(
         incident_id=incident.incident_id,
         pattern_id=incident.pattern_id,
@@ -96,35 +79,20 @@ def read_incident(
         principal=incident.principal,
         principal_arn=incident.principal_arn,
         risk=incident.risk,
-        findings=[FindingSummary.from_stored(f) for f in findings],
-        mitre=incident_techniques(findings),
+        findings=[FindingSummary.from_stored(f) for f in view.findings],
+        mitre=[
+            IncidentTechnique(
+                **TechniqueInfo.from_technique(t.technique).model_dump(),
+                detector_ids=list(t.detector_ids),
+            )
+            for t in view.techniques
+        ],
         timeline=[
             TimelineItem(
                 event=EventSummary.from_event(entry.event),
                 flagged=bool(entry.detector_ids),
                 detector_ids=list(entry.detector_ids),
             )
-            for entry in timeline
+            for entry in view.timeline
         ],
     )
-
-
-def incident_techniques(findings: list[StoredFinding]) -> list[IncidentTechnique]:
-    """The curated techniques of the incident's rules, earliest tactic first."""
-    rules_by_technique: dict[str, set[str]] = {}
-    for stored in findings:
-        detector = DETECTORS_BY_ID.get(stored.finding.detector_id)
-        for mapping in detector.mitre if detector is not None else ():
-            rules_by_technique.setdefault(mapping.technique_id, set()).add(detector.detector_id)
-
-    techniques = sorted(
-        (TECHNIQUES[technique_id] for technique_id in rules_by_technique),
-        key=lambda t: (min(tactic_rank(tactic) for tactic in t.tactics), t.technique_id),
-    )
-    return [
-        IncidentTechnique(
-            **TechniqueInfo.from_technique(technique).model_dump(),
-            detector_ids=sorted(rules_by_technique[technique.technique_id]),
-        )
-        for technique in techniques
-    ]

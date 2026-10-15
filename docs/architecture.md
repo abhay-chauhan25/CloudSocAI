@@ -246,7 +246,7 @@ Possible IAM persistence: developer           Audit logging tampered: root
 
 ## HTTP API
 
-FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`; docs at `http://127.0.0.1:8000/docs`). The API is **read-only**.
+FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`; docs at `http://127.0.0.1:8000/docs`). The API is **read-only** except for requesting an AI analysis.
 
 | Endpoint | Returns |
 |---|---|
@@ -257,6 +257,8 @@ FastAPI app in `backend/app/api/` (run with `uvicorn app.api.main:app --reload`;
 | `GET /findings/{finding_id}` | Reason, risk breakdown, the rule's description/rationale/MITRE IDs, and evidence event summaries in order |
 | `GET /incidents` | Page of incident summaries (title, severity, `risk_score`, `status`, `finding_count`). Filters: `status`, `severity`, `principal`; `sort=newest` (by latest activity) or `sort=risk` |
 | `GET /incidents/{incident_id}` | Summary, risk breakdown, member findings, ATT&CK techniques (ordered by tactic), and the actor's timeline |
+| `GET /incidents/{incident_id}/analysis` | Latest successful AI analysis and whether it is still current (see [ai-analyst.md](ai-analyst.md)) |
+| `POST /incidents/{incident_id}/analysis` | Generate an advisory AI analysis, or return the cached one; rate-limited. The API's only write endpoint, and it never changes the incident |
 | `GET /detectors` | The rule catalog: each rule's description, rationale, default severity, and curated ATT&CK mappings, plus the ATT&CK version and all 15 tactics for coverage views |
 
 Design notes:
@@ -281,7 +283,7 @@ Browser ── http://127.0.0.1:5173/api/incidents ──▶ Vite dev server ─
 |---|---|---|
 | Overview | `/` | API/database health, open incidents, findings per severity, event count, top 5 incidents by risk |
 | Incidents | `/incidents?status=&severity=&sort=&offset=` | Filterable, paginated incident list |
-| Incident detail | `/incidents/:id` | Summary, risk breakdown, facts, member findings, ATT&CK techniques and tactics, timeline (flagged vs context events) |
+| Incident detail | `/incidents/:id` | Summary, risk breakdown, facts, advisory AI analysis (generate/regenerate), member findings, ATT&CK techniques and tactics, timeline (flagged vs context events) |
 | Findings | `/findings?severity=&status=&sort=&offset=` | Filterable, paginated finding list |
 | Finding detail | `/findings/:id` | Reason, risk breakdown, the rule's description/rationale, ATT&CK mappings with rationale, evidence events |
 | Rules | `/rules` | Every rule with its ATT&CK mappings, and tactic coverage (covered vs gaps) |

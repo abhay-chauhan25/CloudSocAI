@@ -38,9 +38,8 @@ def test_detect_command_prints_findings_for_stored_events(
     finally:
         # The commands commit for real, so clean up what they stored.
         with db_engine.begin() as connection:
-            connection.execute(
-                text("TRUNCATE incident_findings, incidents, finding_events, findings, events")
-            )
+            # CASCADE also clears every table that references these.
+            connection.execute(text("TRUNCATE events, findings, incidents CASCADE"))
 
     assert stored == 7
     assert first_run.startswith("4 events analysed, 7 findings (7 new, 0 already stored)")

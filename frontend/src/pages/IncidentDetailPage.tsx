@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router";
 
 import { api } from "../api/client";
 import type { IncidentTechnique } from "../api/types";
+import { AnalysisPanel } from "../components/AnalysisPanel";
 import { RiskScore, SeverityBadge, StatusBadge } from "../components/Badges";
 import { TacticList, TechniqueLink } from "../components/Mitre";
 import { RiskBreakdown } from "../components/RiskBreakdown";
@@ -59,6 +60,8 @@ export function IncidentDetailPage() {
           </dl>
         </section>
       </div>
+
+      <AnalysisPanel incidentId={incident.incident_id} timeline={incident.timeline} />
 
       <h2>Findings ({incident.findings.length})</h2>
       <table>

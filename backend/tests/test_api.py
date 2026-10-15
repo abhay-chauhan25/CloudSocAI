@@ -1,7 +1,6 @@
 """The HTTP API: responses, filtering, pagination, validation, and failures."""
 
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,48 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_session
 from app.api.main import create_app
-from app.collectors.cloudtrail_file import load_cloudtrail_file
 from app.config import get_settings
-from app.correlation.service import run_correlation
 from app.db import create_db_engine, create_session_factory
-from app.detection.engine import run_detectors
-from app.normalization.cloudtrail import normalize_cloudtrail_records
-from app.repositories.events import save_events
-from app.repositories.findings import ScoredFinding, save_findings
-from app.risk.scoring import RiskContext, score_finding
-from app.schemas.event import Event
 
 pytestmark = pytest.mark.db
 
 EVENT_COUNT = 27
 FINDING_COUNT = 11
 CREATE_USER_EVENT = "9b2f4e6a-1c3d-4e5f-8a7b-200000000004"
-
-
-@pytest.fixture
-def client(db_session: Session) -> Iterator[TestClient]:
-    """An API client whose requests use the rolled-back test session."""
-    app = create_app()
-    app.dependency_overrides[get_session] = lambda: db_session
-    # Not used as a context manager, so the lifespan (which would connect to
-    # the development database) never runs.
-    yield TestClient(app)
-
-
-@pytest.fixture
-def seeded(db_session: Session, cloudtrail_samples_dir: Path) -> list[Event]:
-    """All fixture events stored, with their scored findings and incidents."""
-    events: list[Event] = []
-    for path in sorted(cloudtrail_samples_dir.glob("*.json")):
-        events += normalize_cloudtrail_records(load_cloudtrail_file(path)).events
-    save_events(db_session, events)
-    context = RiskContext.from_events(events)
-    save_findings(
-        db_session,
-        [ScoredFinding(f, score_finding(f, context)) for f in run_detectors(events).findings],
-    )
-    run_correlation(db_session)
-    return events
 
 
 def finding_id_for(client: TestClient, detector_id: str) -> str:

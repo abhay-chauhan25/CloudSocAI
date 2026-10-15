@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API and a React dashboard. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -33,6 +33,7 @@ backend/
     correlation/    findings -> incidents, timelines
     api/            FastAPI app: /health, /events, /findings, /incidents, /detectors
     mitre/          curated MITRE ATT&CK catalog (v20)
+    ai/             advisory AI analyst: context, prompt, providers, validation
     models/         SQLAlchemy database tables
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database
@@ -41,7 +42,7 @@ backend/
   tests/            pytest test suite
 frontend/           React + TypeScript dashboard (Vite)
 sample-data/        synthetic CloudTrail logs (fake identifiers only)
-docs/               architecture, detection rules, and CloudTrail reference
+docs/               architecture, detection rules, AI analyst threat model, CloudTrail reference
 docker-compose.yml  local PostgreSQL
 .env.example        configuration template (copy to .env)
 ```
@@ -52,6 +53,7 @@ Requirements: **Python 3.12+**, **Node.js 20.19+**, and **Docker**. No AWS accou
 
 ```bash
 # 1. Configuration: copy the template and set your own password
+#    (optional: add GEMINI_API_KEY for real AI analyses; without it a mock is used)
 cp .env.example .env
 
 # 2. Start PostgreSQL (bound to localhost only)

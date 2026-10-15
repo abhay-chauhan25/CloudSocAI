@@ -99,11 +99,13 @@ type Route = { status?: number; body?: unknown; networkError?: boolean };
 /** A fake fetch that answers by URL path, and records every URL requested. */
 export function fakeFetch(routes: Record<string, Route>) {
   const calls: string[] = [];
-  const fetch = async (input: RequestInfo | URL) => {
+  const fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    calls.push(url);
+    const method = init?.method ?? "GET";
+    calls.push(method === "GET" ? url : `${method} ${url}`);
     const path = url.split("?")[0] ?? url;
-    const route = routes[path];
+    // A route can be keyed by "METHOD /path" or just "/path" (any method).
+    const route = routes[`${method} ${path}`] ?? routes[path];
     if (!route) return new Response("{}", { status: 404 });
     if (route.networkError) throw new TypeError("Failed to fetch");
     return new Response(JSON.stringify(route.body ?? {}), {

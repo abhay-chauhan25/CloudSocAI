@@ -6,13 +6,24 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import URL, Connection, Engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_session
+from app.api.main import create_app
+from app.collectors.cloudtrail_file import load_cloudtrail_file
 from app.config import Settings, get_settings
+from app.correlation.service import run_correlation
 from app.db import create_db_engine
+from app.detection.engine import run_detectors
+from app.normalization.cloudtrail import normalize_cloudtrail_records
+from app.repositories.events import save_events
+from app.repositories.findings import ScoredFinding, save_findings
+from app.risk.scoring import RiskContext, score_finding
+from app.schemas.event import Event
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = BACKEND_DIR.parent
@@ -94,3 +105,32 @@ def db_session(db_engine: Engine) -> Iterator[Session]:
     session.close()
     transaction.rollback()
     connection.close()
+
+
+# --- API -----------------------------------------------------------------------
+
+
+@pytest.fixture
+def client(db_session: Session) -> Iterator[TestClient]:
+    """An API client whose requests use the rolled-back test session."""
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: db_session
+    # Not used as a context manager, so the lifespan (which would connect to
+    # the development database) never runs.
+    yield TestClient(app)
+
+
+@pytest.fixture
+def seeded(db_session: Session, cloudtrail_samples_dir: Path) -> list[Event]:
+    """All fixture events stored, with their scored findings and incidents."""
+    events: list[Event] = []
+    for path in sorted(cloudtrail_samples_dir.glob("*.json")):
+        events += normalize_cloudtrail_records(load_cloudtrail_file(path)).events
+    save_events(db_session, events)
+    context = RiskContext.from_events(events)
+    save_findings(
+        db_session,
+        [ScoredFinding(f, score_finding(f, context)) for f in run_detectors(events).findings],
+    )
+    run_correlation(db_session)
+    return events

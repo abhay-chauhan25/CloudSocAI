@@ -18,7 +18,9 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api.routes import detectors, events, findings, health, incidents
+from app.ai.service import build_analyst_config
+from app.api.routes import analysis, detectors, events, findings, health, incidents
+from app.config import get_settings
 from app.db import create_db_engine, create_session_factory
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Create the connection pool at startup and close it at shutdown."""
     engine = create_db_engine()
     app.state.sessions = create_session_factory(engine)
+    app.state.analyst = build_analyst_config(get_settings())
     yield
     engine.dispose()
 
@@ -54,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(events.router)
     app.include_router(findings.router)
     app.include_router(incidents.router)
+    app.include_router(analysis.router)
     app.include_router(detectors.router)
     return app
 

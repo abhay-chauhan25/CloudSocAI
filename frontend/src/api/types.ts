@@ -164,3 +164,31 @@ export interface IncidentDetail {
   mitre: IncidentTechnique[];
   timeline: TimelineItem[];
 }
+
+export interface NarrativeStep {
+  description: string;
+  event_ids: string[];
+}
+
+export interface AnalysisResult {
+  summary: string;
+  attack_narrative: NarrativeStep[];
+  likely_objective: string;
+  objective_confidence: "low" | "medium" | "high";
+  investigation_steps: string[];
+  containment_suggestions: string[];
+  benign_explanations: string[];
+  techniques_referenced: string[];
+}
+
+export interface Analysis {
+  incident_id: string;
+  provider: string;
+  model: string;
+  created_at: string;
+  is_current: boolean;
+  cached: boolean;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  result: AnalysisResult;
+}

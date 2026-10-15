@@ -1,12 +1,13 @@
 """Application settings, read from environment variables or the repo-root .env file.
 
 Environment variables take precedence over .env, so deployments can inject
-real values without files. The database password is a SecretStr: it is
-hidden in repr() and logs and must be unwrapped explicitly to be used.
+real values without files. Secrets (the database password, the Gemini API
+key) are SecretStr: hidden in repr() and logs, unwrapped only where used.
 """
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,19 @@ class Settings(BaseSettings):
     postgres_db: str
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+
+    # AI analyst. Without an explicit choice, Gemini is used when a key is
+    # configured and the offline mock otherwise; "disabled" turns it off.
+    ai_provider: Literal["gemini", "mock", "disabled"] | None = None
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.5-flash-lite"
+    ai_daily_limit: int = 50  # analysis attempts per 24 hours, across all incidents
+    ai_cooldown_seconds: int = 60  # minimum time between attempts for one incident
+
+    def resolved_ai_provider(self) -> Literal["gemini", "mock", "disabled"]:
+        if self.ai_provider is not None:
+            return self.ai_provider
+        return "gemini" if self.gemini_api_key else "mock"
 
     def database_url(self, database: str | None = None) -> URL:
         """Build the connection URL; ``database`` overrides the default DB name."""
