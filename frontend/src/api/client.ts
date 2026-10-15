@@ -2,6 +2,7 @@
 // never build URLs or call fetch() themselves.
 
 import type {
+  DetectorCatalog,
   EventSummary,
   FindingDetail,
   FindingStatus,
@@ -112,4 +113,6 @@ export const api = {
 
   getIncident: (incidentId: string, signal?: AbortSignal) =>
     request<IncidentDetail>(`/incidents/${segment(incidentId)}`, {}, signal),
+
+  listDetectors: (signal?: AbortSignal) => request<DetectorCatalog>("/detectors", {}, signal),
 };

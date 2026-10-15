@@ -48,8 +48,8 @@ def test_registry_has_the_eight_rules_with_complete_metadata() -> None:
         assert detector.detector_id and detector.name and detector.description
         assert len(detector.rationale) > 50, detector.detector_id
         assert isinstance(detector.severity, Severity)
-        for technique in detector.mitre_techniques:
-            assert re.fullmatch(MITRE_TECHNIQUE_ID, technique), technique
+        for mapping in detector.mitre:
+            assert re.fullmatch(MITRE_TECHNIQUE_ID, mapping.technique_id), mapping
 
 
 def test_duplicate_detector_ids_are_rejected() -> None:
@@ -127,7 +127,7 @@ class BrokenDetector(Detector):
     description = "Always raises."
     rationale = "Used to test that one failing rule does not stop the others."
     severity = Severity.LOW
-    mitre_techniques = ()
+    mitre = ()
 
     def detect(self, events: Sequence[Event]) -> list[Finding]:
         raise RuntimeError("bug in rule")

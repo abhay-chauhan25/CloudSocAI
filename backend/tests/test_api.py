@@ -170,7 +170,12 @@ def test_finding_detail_explains_itself(client: TestClient) -> None:
     assert body["reason"] == "'developer' attached AdministratorAccess to user 'svc-backup'."
     assert body["risk"]["score"] == 80
     assert [f["points"] for f in body["risk"]["factors"]] == [60, 15, 5]
-    assert body["detector"]["mitre_techniques"] == ["T1098.003"]
+    [mapping] = body["detector"]["mitre"]
+    assert mapping["technique_id"] == "T1098.003"
+    assert mapping["name"] == "Account Manipulation: Additional Cloud Roles"
+    assert [t["name"] for t in mapping["tactics"]] == ["Persistence", "Privilege Escalation"]
+    assert mapping["url"] == "https://attack.mitre.org/techniques/T1098/003/"
+    assert "AttachUserPolicy" in mapping["rationale"]
     assert "rationale" in body["detector"]
     [evidence] = body["evidence"]
     assert evidence["event_name"] == "AttachUserPolicy"
@@ -264,6 +269,42 @@ def test_incident_timeline_marks_events_flagged_by_several_rules(client: TestCli
 
     stop_logging = next(t for t in body["timeline"] if t["event"]["event_name"] == "StopLogging")
     assert stop_logging["detector_ids"] == ["cloudtrail-logging-stopped", "root-account-use"]
+
+
+@pytest.mark.usefixtures("seeded")
+def test_incident_lists_its_techniques_in_tactic_order(client: TestClient) -> None:
+    root = client.get(f"/incidents/{incident_id_for(client, 'audit-logging-tampered')}").json()
+    iam = client.get(f"/incidents/{incident_id_for(client, 'iam-persistence')}").json()
+
+    assert [(t["technique_id"], t["detector_ids"]) for t in root["mitre"]] == [
+        ("T1078.004", ["console-login-without-mfa", "root-account-use"]),
+        ("T1685.002", ["cloudtrail-logging-stopped", "cloudtrail-trail-deleted"]),
+    ]
+    assert [t["technique_id"] for t in iam["mitre"]] == ["T1098.001", "T1098.003", "T1136.003"]
+
+
+def test_unmapped_rules_add_no_techniques(
+    client: TestClient, db_session: Session, seeded: list
+) -> None:
+    probing = client.get(f"/incidents/{incident_id_for(client, 'credential-probing')}").json()
+
+    assert probing["mitre"] == []
+
+
+# --- detectors -----------------------------------------------------------------
+
+
+def test_detector_catalog(client: TestClient) -> None:
+    body = client.get("/detectors").json()
+
+    assert body["attack_version"] == "20.0"
+    assert [t["tactic_id"] for t in body["tactics"]][:3] == ["TA0043", "TA0042", "TA0001"]
+    assert len(body["tactics"]) == 15
+    rules = {d["detector_id"]: d for d in body["detectors"]}
+    assert len(rules) == 8
+    assert rules["cloudtrail-trail-deleted"]["severity"] == "critical"
+    assert [m["technique_id"] for m in rules["cloudtrail-trail-deleted"]["mitre"]] == ["T1685.002"]
+    assert rules["failed-call-burst"]["mitre"] == []
 
 
 def test_unknown_incident_is_404(client: TestClient) -> None:

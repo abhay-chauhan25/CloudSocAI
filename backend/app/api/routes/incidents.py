@@ -12,14 +12,18 @@ from app.api.schemas import (
     FindingSummary,
     IncidentDetail,
     IncidentSummary,
+    IncidentTechnique,
     Page,
+    TechniqueInfo,
     TimelineItem,
 )
 from app.correlation.timeline import build_timeline, timeline_range
+from app.detection.registry import DETECTORS_BY_ID
+from app.mitre.catalog import TECHNIQUES, tactic_rank
 from app.repositories.events import get_events, list_actor_events
 from app.repositories.findings import get_findings
 from app.repositories.incidents import IncidentSort, get_incident, search_incidents
-from app.schemas.finding import Severity
+from app.schemas.finding import Severity, StoredFinding
 from app.schemas.incident import IncidentStatus
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -93,6 +97,7 @@ def read_incident(
         principal_arn=incident.principal_arn,
         risk=incident.risk,
         findings=[FindingSummary.from_stored(f) for f in findings],
+        mitre=incident_techniques(findings),
         timeline=[
             TimelineItem(
                 event=EventSummary.from_event(entry.event),
@@ -102,3 +107,24 @@ def read_incident(
             for entry in timeline
         ],
     )
+
+
+def incident_techniques(findings: list[StoredFinding]) -> list[IncidentTechnique]:
+    """The curated techniques of the incident's rules, earliest tactic first."""
+    rules_by_technique: dict[str, set[str]] = {}
+    for stored in findings:
+        detector = DETECTORS_BY_ID.get(stored.finding.detector_id)
+        for mapping in detector.mitre if detector is not None else ():
+            rules_by_technique.setdefault(mapping.technique_id, set()).add(detector.detector_id)
+
+    techniques = sorted(
+        (TECHNIQUES[technique_id] for technique_id in rules_by_technique),
+        key=lambda t: (min(tactic_rank(tactic) for tactic in t.tactics), t.technique_id),
+    )
+    return [
+        IncidentTechnique(
+            **TechniqueInfo.from_technique(technique).model_dump(),
+            detector_ids=sorted(rules_by_technique[technique.technique_id]),
+        )
+        for technique in techniques
+    ]

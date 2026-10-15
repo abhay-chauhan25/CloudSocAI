@@ -8,14 +8,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_session
 from app.api.routes.events import MAX_PAGE_SIZE
 from app.api.schemas import DetectorInfo, EventSummary, FindingDetail, FindingSummary, Page
-from app.detection.registry import DEFAULT_DETECTORS
+from app.detection.registry import DETECTORS_BY_ID
 from app.repositories.events import get_events
 from app.repositories.findings import FindingSort, get_finding, search_findings
 from app.schemas.finding import FindingStatus, Severity
 
 router = APIRouter(prefix="/findings", tags=["findings"])
-
-DETECTORS_BY_ID = {detector.detector_id: detector for detector in DEFAULT_DETECTORS}
 
 
 @router.get("")

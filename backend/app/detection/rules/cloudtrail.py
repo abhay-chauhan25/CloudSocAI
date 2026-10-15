@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from app.detection.base import SingleEventDetector, outcome_suffix, request_param
+from app.detection.base import MitreMapping, SingleEventDetector, outcome_suffix, request_param
 from app.schemas.event import Event
 from app.schemas.finding import Severity
 
@@ -16,7 +16,13 @@ class _TrailTamperingDetector(SingleEventDetector):
 
     trail_event_name: ClassVar[str]
     severity = Severity.CRITICAL
-    mitre_techniques = ("T1562.008",)  # Impair Defenses: Disable or Modify Cloud Logs
+    mitre = (
+        MitreMapping(
+            "T1685.002",
+            "Stopping or deleting a CloudTrail trail disables the account's cloud audit "
+            "log; ATT&CK's analytic for this sub-technique names StopLogging and DeleteTrail.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         return event.service == "cloudtrail" and event.event_name == self.trail_event_name

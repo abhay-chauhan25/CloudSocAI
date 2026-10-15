@@ -298,7 +298,7 @@ def test_trail_tampering_is_critical(detector: Detector, event_name: str) -> Non
 
     assert finding.severity is Severity.CRITICAL
     assert finding.resource == "management-trail"
-    assert detector.mitre_techniques == ("T1562.008",)
+    assert [m.technique_id for m in detector.mitre] == ["T1685.002"]
 
 
 @pytest.mark.parametrize(

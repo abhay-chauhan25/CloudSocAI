@@ -9,7 +9,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.detection.base import Detector
+from app.detection.base import Detector, MitreMapping
+from app.mitre.catalog import TECHNIQUES, Tactic, Technique
 from app.schemas.event import Event, PrincipalType
 from app.schemas.finding import FindingStatus, Severity, StoredFinding
 from app.schemas.incident import IncidentStatus, StoredIncident
@@ -75,6 +76,45 @@ class FindingSummary(BaseModel):
         )
 
 
+class TacticInfo(BaseModel):
+    tactic_id: str
+    name: str
+    url: str
+
+    @classmethod
+    def from_tactic(cls, tactic: Tactic) -> "TacticInfo":
+        return cls(tactic_id=tactic.tactic_id, name=tactic.name, url=tactic.url)
+
+
+class TechniqueInfo(BaseModel):
+    technique_id: str
+    name: str
+    tactics: list[TacticInfo]
+    url: str
+
+    @classmethod
+    def from_technique(cls, technique: Technique) -> "TechniqueInfo":
+        return cls(
+            technique_id=technique.technique_id,
+            name=technique.name,
+            tactics=[TacticInfo.from_tactic(t) for t in technique.tactics],
+            url=technique.url,
+        )
+
+
+class MitreMappingInfo(TechniqueInfo):
+    """A technique together with the curated reason a rule maps to it."""
+
+    rationale: str
+
+    @classmethod
+    def from_mapping(cls, mapping: MitreMapping) -> "MitreMappingInfo":
+        technique = TECHNIQUES[mapping.technique_id]
+        return cls(
+            **TechniqueInfo.from_technique(technique).model_dump(), rationale=mapping.rationale
+        )
+
+
 class DetectorInfo(BaseModel):
     """The rule behind a finding, so an analyst can judge it without reading code."""
 
@@ -82,7 +122,8 @@ class DetectorInfo(BaseModel):
     name: str
     description: str
     rationale: str
-    mitre_techniques: list[str]
+    severity: Severity
+    mitre: list[MitreMappingInfo]
 
     @classmethod
     def from_detector(cls, detector: Detector) -> "DetectorInfo":
@@ -91,8 +132,21 @@ class DetectorInfo(BaseModel):
             name=detector.name,
             description=detector.description,
             rationale=detector.rationale,
-            mitre_techniques=list(detector.mitre_techniques),
+            severity=detector.severity,
+            mitre=[MitreMappingInfo.from_mapping(m) for m in detector.mitre],
         )
+
+
+class DetectorCatalog(BaseModel):
+    attack_version: str
+    tactics: list[TacticInfo]  # every Enterprise tactic in matrix order, for coverage views
+    detectors: list[DetectorInfo]
+
+
+class IncidentTechnique(TechniqueInfo):
+    """An ATT&CK technique observed in an incident, and which of its rules mapped to it."""
+
+    detector_ids: list[str]
 
 
 class FindingDetail(BaseModel):
@@ -168,6 +222,8 @@ class IncidentDetail(BaseModel):
     principal_arn: str | None
     risk: RiskAssessment
     findings: list[FindingSummary]
+    # Curated mappings of the incident's rules, ordered by tactic (matrix order).
+    mitre: list[IncidentTechnique]
     timeline: list[TimelineItem]
 
 

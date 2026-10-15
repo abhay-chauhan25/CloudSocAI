@@ -64,6 +64,22 @@ export const iamIncidentDetail: IncidentDetail = {
     ],
   },
   findings: [adminFinding],
+  mitre: [
+    {
+      technique_id: "T1098.003",
+      name: "Account Manipulation: Additional Cloud Roles",
+      tactics: [
+        { tactic_id: "TA0003", name: "Persistence", url: "https://attack.mitre.org/tactics/TA0003/" },
+        {
+          tactic_id: "TA0004",
+          name: "Privilege Escalation",
+          url: "https://attack.mitre.org/tactics/TA0004/",
+        },
+      ],
+      url: "https://attack.mitre.org/techniques/T1098/003/",
+      detector_ids: ["admin-policy-attached"],
+    },
+  ],
   timeline: [
     {
       event: event("e1", "ListSecrets", "2026-10-06T03:05:02Z", false),

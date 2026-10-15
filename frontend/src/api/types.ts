@@ -70,12 +70,41 @@ export interface FindingSummary {
   event_count: number;
 }
 
+export interface TacticInfo {
+  tactic_id: string;
+  name: string;
+  url: string;
+}
+
+export interface TechniqueInfo {
+  technique_id: string;
+  name: string;
+  tactics: TacticInfo[];
+  url: string;
+}
+
+/** A curated mapping: a technique plus why the rule maps to it. */
+export interface MitreMapping extends TechniqueInfo {
+  rationale: string;
+}
+
 export interface DetectorInfo {
   detector_id: string;
   name: string;
   description: string;
   rationale: string;
-  mitre_techniques: string[];
+  severity: Severity;
+  mitre: MitreMapping[];
+}
+
+export interface DetectorCatalog {
+  attack_version: string;
+  tactics: TacticInfo[];
+  detectors: DetectorInfo[];
+}
+
+export interface IncidentTechnique extends TechniqueInfo {
+  detector_ids: string[];
 }
 
 export interface FindingDetail {
@@ -132,5 +161,6 @@ export interface IncidentDetail {
   principal_arn: string | null;
   risk: RiskAssessment;
   findings: FindingSummary[];
+  mitre: IncidentTechnique[];
   timeline: TimelineItem[];
 }

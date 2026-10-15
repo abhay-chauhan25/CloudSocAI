@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API and a React dashboard. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) that produce stored findings with explainable risk scores, correlated into incidents with investigation timelines, and served by a read-only REST API and a React dashboard. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -31,7 +31,8 @@ backend/
     detection/      detector interface, engine, and rules
     risk/           explainable risk scoring
     correlation/    findings -> incidents, timelines
-    api/            FastAPI app: /health, /events, /findings, /incidents
+    api/            FastAPI app: /health, /events, /findings, /incidents, /detectors
+    mitre/          curated MITRE ATT&CK catalog (v20)
     models/         SQLAlchemy database tables
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database

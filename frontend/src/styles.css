@@ -401,3 +401,58 @@ button:not(:disabled) {
     gap: 0.25rem;
   }
 }
+
+/* --- MITRE ATT&CK ----------------------------------------------------------- */
+
+.technique {
+  white-space: nowrap;
+}
+
+.mapping + .mapping {
+  margin-top: 0.75rem;
+}
+
+.mapping .chips {
+  display: inline-flex;
+  margin-top: 0;
+}
+
+.coverage {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.coverage li {
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.coverage li.covered {
+  border-color: var(--low);
+  background: color-mix(in srgb, var(--low) 15%, transparent);
+}
+
+.coverage a {
+  text-decoration: none;
+}
+
+.coverage li.gap a {
+  color: var(--muted);
+}
+
+.tactic-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tactic-summary .chips {
+  margin-top: 0;
+}

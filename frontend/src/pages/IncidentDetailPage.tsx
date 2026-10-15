@@ -1,7 +1,9 @@
 import { Link, useParams } from "react-router";
 
 import { api } from "../api/client";
+import type { IncidentTechnique } from "../api/types";
 import { RiskScore, SeverityBadge, StatusBadge } from "../components/Badges";
+import { TacticList, TechniqueLink } from "../components/Mitre";
 import { RiskBreakdown } from "../components/RiskBreakdown";
 import { ErrorMessage, Loading } from "../components/States";
 import { Timeline } from "../components/Timeline";
@@ -89,6 +91,54 @@ export function IncidentDetailPage() {
         </tbody>
       </table>
 
+      <h2>MITRE ATT&amp;CK</h2>
+      {incident.mitre.length === 0 ? (
+        <p className="muted">None of this incident's rules map to a specific technique.</p>
+      ) : (
+        <>
+          <div className="muted tactic-summary">
+            Tactics (attacker goals) covered:
+            <span className="chips">
+              {tacticsCovered(incident.mitre).map((name) => (
+                <span key={name} className="chip">
+                  {name}
+                </span>
+              ))}
+            </span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Technique</th>
+                <th>Tactics</th>
+                <th>Detected by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incident.mitre.map((technique) => (
+                <tr key={technique.technique_id}>
+                  <td>
+                    <TechniqueLink technique={technique} />
+                  </td>
+                  <td>
+                    <TacticList technique={technique} />
+                  </td>
+                  <td>
+                    <span className="chips">
+                      {technique.detector_ids.map((id) => (
+                        <span key={id} className="chip">
+                          {id}
+                        </span>
+                      ))}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
       <h2>Timeline</h2>
       <p className="muted">
         Everything this actor did around the incident. Highlighted events were flagged by a rule;
@@ -97,4 +147,9 @@ export function IncidentDetailPage() {
       <Timeline items={incident.timeline} />
     </>
   );
+}
+
+/** Unique tactic names across the techniques, in the order the API returned them. */
+function tacticsCovered(techniques: IncidentTechnique[]): string[] {
+  return [...new Set(techniques.flatMap((t) => t.tactics.map((tactic) => tactic.name)))];
 }

@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router";
 
 import { api } from "../api/client";
 import { RiskScore, SeverityBadge, StatusBadge } from "../components/Badges";
+import { TacticList, TechniqueLink } from "../components/Mitre";
 import { RiskBreakdown } from "../components/RiskBreakdown";
 import { ErrorMessage, Loading } from "../components/States";
 import { formatTime } from "../format";
@@ -66,9 +67,18 @@ export function FindingDetailPage() {
           <dd>{finding.detector.rationale}</dd>
           <dt>MITRE ATT&amp;CK</dt>
           <dd>
-            {finding.detector.mitre_techniques.length > 0
-              ? finding.detector.mitre_techniques.join(", ")
-              : "None mapped"}
+            {finding.detector.mitre.length === 0 ? (
+              <span className="muted">
+                Not mapped: this rule's evidence does not justify one specific technique.
+              </span>
+            ) : (
+              finding.detector.mitre.map((mapping) => (
+                <div key={mapping.technique_id} className="mapping">
+                  <TechniqueLink technique={mapping} /> <TacticList technique={mapping} />
+                  <div className="muted">{mapping.rationale}</div>
+                </div>
+              ))
+            )}
           </dd>
         </dl>
       ) : (

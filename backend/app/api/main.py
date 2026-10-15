@@ -18,7 +18,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.api.routes import events, findings, health, incidents
+from app.api.routes import detectors, events, findings, health, incidents
 from app.db import create_db_engine, create_session_factory
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(events.router)
     app.include_router(findings.router)
     app.include_router(incidents.router)
+    app.include_router(detectors.router)
     return app
 
 

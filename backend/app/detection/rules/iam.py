@@ -1,6 +1,6 @@
 """Detections about IAM changes: new users, new credentials, and admin privileges."""
 
-from app.detection.base import SingleEventDetector, request_param
+from app.detection.base import MitreMapping, SingleEventDetector, request_param
 from app.schemas.event import Event, PrincipalType
 from app.schemas.finding import Severity
 
@@ -38,7 +38,13 @@ class IamUserCreated(SingleEventDetector):
         "combined with new credentials or privileges for the same user."
     )
     severity = Severity.LOW
-    mitre_techniques = ("T1136.003",)  # Create Account: Cloud Account
+    mitre = (
+        MitreMapping(
+            "T1136.003",
+            "CreateUser creates a new cloud account, which an attacker can use to keep "
+            "access independently of the identity they compromised.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         return event.service == "iam" and event.event_name == "CreateUser" and event.success
@@ -61,7 +67,13 @@ class AccessKeyCreated(SingleEventDetector):
         "recommends root has none. False positives: planned key rotation."
     )
     severity = Severity.MEDIUM
-    mitre_techniques = ("T1098.001",)  # Account Manipulation: Additional Cloud Credentials
+    mitre = (
+        MitreMapping(
+            "T1098.001",
+            "CreateAccessKey adds a credential to an existing account: exactly the "
+            "additional cloud credentials this sub-technique describes.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         return event.service == "iam" and event.event_name == "CreateAccessKey" and event.success
@@ -100,7 +112,13 @@ class AdministratorAccessAttached(SingleEventDetector):
         "policies or customer policies granting the same rights."
     )
     severity = Severity.HIGH
-    mitre_techniques = ("T1098.003",)  # Account Manipulation: Additional Cloud Roles
+    mitre = (
+        MitreMapping(
+            "T1098.003",
+            "Attaching a policy grants an identity additional cloud permissions; ATT&CK "
+            "names AttachUserPolicy as an AWS example of this sub-technique.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         policy_arn = request_param(event, "policyArn")

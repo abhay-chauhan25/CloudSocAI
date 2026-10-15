@@ -149,7 +149,7 @@ An attacker uses `developer`'s long-term access key (`AKIA...`) from an unfamili
 
 **Should trigger:** iam-user-created, access-key-created, AdministratorAccess-attached, and later the IAM correlation rule (new credential + privilege change, same actor, within minutes).
 
-### `cloudtrail-disabled.json` — root login and defense evasion (2026-10-06)
+### `cloudtrail-disabled.json` — root login and audit-log tampering (2026-10-06)
 
 | Time | Principal | Event | Attacker intent |
 |---|---|---|---|
@@ -158,7 +158,7 @@ An attacker uses `developer`'s long-term access key (`AKIA...`) from an unfamili
 | 22:44 | root | `StopLogging` `management-trail` | blind the defenders |
 | 22:45 | root | `DeleteTrail` `management-trail` | remove the trail entirely |
 
-**Should trigger:** root-account-use (every call), console-login-without-mfa (High: root), and CloudTrail stopped/deleted (defense evasion — MITRE ATT&CK T1562.008, *Impair Defenses: Disable or Modify Cloud Logs*).
+**Should trigger:** root-account-use (every call), console-login-without-mfa (High: root), and CloudTrail stopped/deleted (MITRE ATT&CK T1685.002, *Disable or Modify Cloud Log*, tactic Defense Impairment).
 
 ### `failed-api-burst.json` — stolen CI key used for discovery (2026-10-07)
 

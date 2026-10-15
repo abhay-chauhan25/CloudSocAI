@@ -28,6 +28,13 @@ describe("IncidentDetailPage", () => {
     expect(screen.getByRole("table", { name: "Risk breakdown" }).textContent).toContain("+80");
     expect(screen.getByRole("link", { name: "AdministratorAccess policy attached" })).toBeTruthy();
 
+    const technique = screen.getByRole("link", { name: /T1098\.003/ });
+    expect(technique.getAttribute("href")).toBe("https://attack.mitre.org/techniques/T1098/003/");
+    expect(technique.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(screen.getByText(/Tactics \(attacker goals\) covered/).textContent).toContain(
+      "PersistencePrivilege Escalation",
+    );
+
     const items = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(items.map((item) => item.className)).toEqual(["context", "flagged"]);
     expect(items[0]?.textContent).toContain("failed: AccessDenied");

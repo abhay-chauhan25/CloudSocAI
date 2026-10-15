@@ -35,3 +35,5 @@ DEFAULT_DETECTORS: tuple[Detector, ...] = check_unique_ids(
         FailedCallBurst(),
     ]
 )
+
+DETECTORS_BY_ID: dict[str, Detector] = {d.detector_id: d for d in DEFAULT_DETECTORS}

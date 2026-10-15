@@ -28,7 +28,7 @@ class FailedCallBurst(Detector):
     severity = Severity.MEDIUM
     # Denials have many causes (discovery, brute force, broken automation), so no
     # single ATT&CK technique is justified for the burst itself.
-    mitre_techniques = ()
+    mitre = ()
 
     def __init__(
         self, threshold: int = DEFAULT_THRESHOLD, window: timedelta = DEFAULT_WINDOW

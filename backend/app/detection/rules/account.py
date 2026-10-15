@@ -1,6 +1,6 @@
 """Detections about how the account is accessed: root use and sign-in without MFA."""
 
-from app.detection.base import SingleEventDetector, outcome_suffix
+from app.detection.base import MitreMapping, SingleEventDetector, outcome_suffix
 from app.schemas.event import Event, PrincipalType
 from app.schemas.finding import Severity
 
@@ -17,7 +17,13 @@ class RootAccountUse(SingleEventDetector):
         "are excluded."
     )
     severity = Severity.HIGH
-    mitre_techniques = ("T1078.004",)  # Valid Accounts: Cloud Accounts
+    mitre = (
+        MitreMapping(
+            "T1078.004",
+            "The root user is a valid cloud account. Its credentials being used is the "
+            "technique itself; the finding cannot tell a legitimate owner from an attacker.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         identity = event.raw_event.get("userIdentity", {})
@@ -45,7 +51,13 @@ class ConsoleLoginWithoutMfa(SingleEventDetector):
         "MFAUsed=No even when MFA was used — a classic false positive."
     )
     severity = Severity.MEDIUM
-    mitre_techniques = ("T1078.004",)  # Valid Accounts: Cloud Accounts
+    mitre = (
+        MitreMapping(
+            "T1078.004",
+            "A password-only console sign-in is how stolen or guessed credentials for a "
+            "valid cloud account are used; MFA is the control that blocks it.",
+        ),
+    )
 
     def matches(self, event: Event) -> bool:
         return (

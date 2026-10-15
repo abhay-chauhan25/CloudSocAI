@@ -7,10 +7,23 @@ state between runs.
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import ClassVar
 
 from app.schemas.event import Event
 from app.schemas.finding import Finding, Severity, make_finding_id
+
+
+@dataclass(frozen=True)
+class MitreMapping:
+    """A curated claim that a rule detects an ATT&CK technique, and why.
+
+    Written and reviewed by a person. Generated suggestions (for example from
+    an LLM) never replace these.
+    """
+
+    technique_id: str  # must exist in app.mitre.catalog.TECHNIQUES (checked by tests)
+    rationale: str
 
 
 class Detector(ABC):
@@ -25,7 +38,7 @@ class Detector(ABC):
     description: ClassVar[str]  # what triggers it
     rationale: ClassVar[str]  # why it matters, and its known false positives
     severity: ClassVar[Severity]  # default; a rule may adjust it per finding
-    mitre_techniques: ClassVar[tuple[str, ...]]  # ATT&CK IDs, empty when none is justified
+    mitre: ClassVar[tuple[MitreMapping, ...]]  # empty when no mapping is justified
 
     @abstractmethod
     def detect(self, events: Sequence[Event]) -> list[Finding]:
