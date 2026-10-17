@@ -4,7 +4,7 @@ import { TacticList, TechniqueLink } from "../components/Mitre";
 import { ErrorMessage, Loading } from "../components/States";
 import { useApi } from "../hooks/useApi";
 
-/** The detection rules and which ATT&CK tactics they cover, gaps included. */
+/** The detection rules, which ATT&CK tactics they cover (gaps included), and the posture checks. */
 export function RulesPage() {
   const state = useApi((signal) => api.listDetectors(signal), []);
 
@@ -12,7 +12,7 @@ export function RulesPage() {
   if (state.status === "error") {
     return <ErrorMessage message={state.error.message} onRetry={state.reload} />;
   }
-  const { attack_version, tactics, detectors } = state.data;
+  const { attack_version, tactics, detectors, posture_checks } = state.data;
   const covered = new Set(
     detectors.flatMap((d) => d.mitre.flatMap((m) => m.tactics.map((t) => t.tactic_id))),
   );
@@ -74,6 +74,39 @@ export function RulesPage() {
                   ))
                 )}
               </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2>Posture checks</h2>
+      <p className="muted">
+        {posture_checks.length} checks of AWS configuration, run against a snapshot rather than
+        activity. They describe weaknesses, not adversary behaviour, so they are not mapped to
+        ATT&amp;CK.
+      </p>
+      <table aria-label="Posture checks">
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Service</th>
+            <th>Severity</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          {posture_checks.map((check) => (
+            <tr key={check.check_id}>
+              <td>
+                <strong>{check.name}</strong>{" "}
+                <span className="mono muted">({check.check_id})</span>
+                <div className="muted">{check.description}</div>
+              </td>
+              <td className="mono nowrap">{check.service}</td>
+              <td>
+                <SeverityBadge severity={check.severity} />
+              </td>
+              <td>{check.reference}</td>
             </tr>
           ))}
         </tbody>

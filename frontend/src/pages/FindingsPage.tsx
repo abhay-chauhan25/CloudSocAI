@@ -87,6 +87,7 @@ export function FindingsPage() {
                         {finding.title}
                       </Link>
                       {finding.resource && <div className="muted">{finding.resource}</div>}
+                      {finding.kind === "posture" && <div className="muted">Posture check</div>}
                     </td>
                     <td>
                       <SeverityBadge severity={finding.severity} />

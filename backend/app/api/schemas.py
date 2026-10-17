@@ -6,11 +6,14 @@ by accident.
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from app.detection.base import Detector, MitreMapping
 from app.mitre.catalog import TECHNIQUES, Tactic, Technique
+from app.posture.base import PostureCheck
+from app.posture.registry import CHECKS_BY_ID
 from app.schemas.event import Event, PrincipalType
 from app.schemas.finding import FindingStatus, Severity, StoredFinding
 from app.schemas.incident import IncidentStatus, StoredIncident
@@ -45,9 +48,18 @@ class EventSummary(BaseModel):
         return cls.model_validate(event)
 
 
+# "rule": a detection rule judged events. "posture": a posture check judged configuration.
+FindingKind = Literal["rule", "posture"]
+
+
+def finding_kind(detector_id: str) -> FindingKind:
+    return "posture" if detector_id in CHECKS_BY_ID else "rule"
+
+
 class FindingSummary(BaseModel):
     finding_id: str
     detector_id: str
+    kind: FindingKind
     title: str
     severity: Severity
     risk_score: int
@@ -64,6 +76,7 @@ class FindingSummary(BaseModel):
         return cls(
             finding_id=finding.finding_id,
             detector_id=finding.detector_id,
+            kind=finding_kind(finding.detector_id),
             title=finding.title,
             severity=finding.severity,
             risk_score=stored.risk.score,
@@ -137,10 +150,39 @@ class DetectorInfo(BaseModel):
         )
 
 
+class PostureCheckInfo(BaseModel):
+    """The posture check behind a finding: what it tests, why, and how to fix it."""
+
+    check_id: str
+    name: str
+    service: str
+    description: str
+    rationale: str
+    remediation: str
+    reference: str
+    severity: Severity
+
+    @classmethod
+    def from_check(cls, check: PostureCheck) -> "PostureCheckInfo":
+        return cls(
+            check_id=check.check_id,
+            name=check.name,
+            service=check.service,
+            description=check.description,
+            rationale=check.rationale,
+            remediation=check.remediation,
+            reference=check.reference,
+            severity=check.severity,
+        )
+
+
 class DetectorCatalog(BaseModel):
     attack_version: str
     tactics: list[TacticInfo]  # every Enterprise tactic in matrix order, for coverage views
     detectors: list[DetectorInfo]
+    # Posture checks describe configuration weaknesses, not adversary behaviour,
+    # so they are not mapped to ATT&CK techniques.
+    posture_checks: list[PostureCheckInfo]
 
 
 class IncidentTechnique(TechniqueInfo):
@@ -152,6 +194,7 @@ class IncidentTechnique(TechniqueInfo):
 class FindingDetail(BaseModel):
     finding_id: str
     detector_id: str
+    kind: FindingKind
     title: str
     severity: Severity
     reason: str
@@ -164,9 +207,10 @@ class FindingDetail(BaseModel):
     principal_arn: str | None
     resource: str | None
     risk: RiskAssessment
-    # None if the rule that produced the finding no longer exists.
+    # The rule or posture check behind the finding; both None if it no longer exists.
     detector: DetectorInfo | None
-    evidence: list[EventSummary]
+    posture_check: PostureCheckInfo | None
+    evidence: list[EventSummary]  # empty for posture findings
 
 
 class IncidentSummary(BaseModel):

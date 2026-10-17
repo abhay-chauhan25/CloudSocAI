@@ -56,9 +56,13 @@ export interface EventSummary {
   error_code: string | null;
 }
 
+/** "rule": a detection rule judged activity. "posture": a posture check judged configuration. */
+export type FindingKind = "rule" | "posture";
+
 export interface FindingSummary {
   finding_id: string;
   detector_id: string;
+  kind: FindingKind;
   title: string;
   severity: Severity;
   risk_score: number;
@@ -97,10 +101,23 @@ export interface DetectorInfo {
   mitre: MitreMapping[];
 }
 
+/** A posture check: tests configuration state, so it has no ATT&CK mapping. */
+export interface PostureCheckInfo {
+  check_id: string;
+  name: string;
+  service: string;
+  description: string;
+  rationale: string;
+  remediation: string;
+  reference: string;
+  severity: Severity;
+}
+
 export interface DetectorCatalog {
   attack_version: string;
   tactics: TacticInfo[];
   detectors: DetectorInfo[];
+  posture_checks: PostureCheckInfo[];
 }
 
 export interface IncidentTechnique extends TechniqueInfo {
@@ -110,6 +127,7 @@ export interface IncidentTechnique extends TechniqueInfo {
 export interface FindingDetail {
   finding_id: string;
   detector_id: string;
+  kind: FindingKind;
   title: string;
   severity: Severity;
   reason: string;
@@ -123,6 +141,8 @@ export interface FindingDetail {
   resource: string | null;
   risk: RiskAssessment;
   detector: DetectorInfo | null;
+  posture_check: PostureCheckInfo | null;
+  /** Empty for posture findings: their evidence is the configuration in `reason`. */
   evidence: EventSummary[];
 }
 

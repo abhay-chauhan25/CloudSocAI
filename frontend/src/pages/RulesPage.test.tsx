@@ -42,6 +42,18 @@ const catalog: DetectorCatalog = {
       mitre: [],
     },
   ],
+  posture_checks: [
+    {
+      check_id: "s3-bucket-public",
+      name: "S3 bucket is public",
+      service: "s3",
+      description: "The bucket policy is public.",
+      rationale: "Data leak.",
+      remediation: "Remove the public statement.",
+      reference: "CIS AWS Foundations Benchmark: S3 Block Public Access enabled",
+      severity: "critical",
+    },
+  ],
 };
 
 describe("RulesPage", () => {
@@ -64,5 +76,8 @@ describe("RulesPage", () => {
     expect(screen.getByText(/1 of 3 tactics covered/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /T1136\.003/ })).toBeTruthy();
     expect(screen.getByText("Not mapped")).toBeTruthy();
+    const posture = screen.getByRole("table", { name: "Posture checks" });
+    expect(within(posture).getByText("S3 bucket is public")).toBeTruthy();
+    expect(within(posture).getByText(/S3 Block Public Access enabled/)).toBeTruthy();
   });
 });

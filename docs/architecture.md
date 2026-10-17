@@ -182,6 +182,10 @@ Design rules:
 - **No baseline, no penalty.** A principal with no earlier history gets no "new IP" points — unknown is not suspicious. The baseline is only as good as the stored history.
 - **Key IDs are masked** in explanations (`AKIA...MPLE`), as the AWS console does.
 
+## Posture checks (CSPM)
+
+Posture checks (`backend/app/posture/`) judge **configuration state** from a snapshot shaped like boto3 responses, not activity. They produce ordinary `Finding`s with `event_ids=()`, no actor, the resource ARN in `resource`, and the observed values quoted in `reason`; their ID is `uuid5(check_id, resource)`, so a recurring misconfiguration stays one finding. The API marks each finding `kind: "rule"` or `"posture"`, and `GET /detectors` lists posture checks separately from rules (they have no ATT&CK mapping). Missing snapshot sections are reported as *not evaluated*, never as passing. Details: [posture-checks.md](posture-checks.md).
+
 ## Finding storage
 
 ```text

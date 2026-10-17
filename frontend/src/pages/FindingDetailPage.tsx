@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 
 import { api } from "../api/client";
+import type { FindingDetail } from "../api/types";
 import { RiskScore, SeverityBadge, StatusBadge } from "../components/Badges";
 import { TacticList, TechniqueLink } from "../components/Mitre";
 import { RiskBreakdown } from "../components/RiskBreakdown";
@@ -39,21 +40,78 @@ export function FindingDetailPage() {
           <RiskBreakdown risk={finding.risk} />
         </section>
         <section>
-          <dl className="facts">
-            <dt>Actor</dt>
-            <dd>{finding.principal ?? "—"}</dd>
-            <dt>ARN</dt>
-            <dd className="mono">{finding.principal_arn ?? "—"}</dd>
-            <dt>Resource</dt>
-            <dd>{finding.resource ?? "—"}</dd>
-            <dt>First seen</dt>
-            <dd>{formatTime(finding.first_seen)}</dd>
-            <dt>Last seen</dt>
-            <dd>{formatTime(finding.last_seen)}</dd>
-          </dl>
+          {finding.kind === "posture" ? (
+            <dl className="facts">
+              <dt>Resource</dt>
+              <dd className="mono">{finding.resource ?? "—"}</dd>
+              <dt>Account</dt>
+              <dd className="mono">{finding.account_id ?? "—"}</dd>
+              <dt>Observed</dt>
+              <dd>{formatTime(finding.first_seen)}</dd>
+            </dl>
+          ) : (
+            <dl className="facts">
+              <dt>Actor</dt>
+              <dd>{finding.principal ?? "—"}</dd>
+              <dt>ARN</dt>
+              <dd className="mono">{finding.principal_arn ?? "—"}</dd>
+              <dt>Resource</dt>
+              <dd>{finding.resource ?? "—"}</dd>
+              <dt>First seen</dt>
+              <dd>{formatTime(finding.first_seen)}</dd>
+              <dt>Last seen</dt>
+              <dd>{formatTime(finding.last_seen)}</dd>
+            </dl>
+          )}
         </section>
       </div>
 
+      {finding.kind === "posture" ? (
+        <PostureCheckSection finding={finding} />
+      ) : (
+        <RuleSection finding={finding} />
+      )}
+    </>
+  );
+}
+
+function PostureCheckSection({ finding }: { finding: FindingDetail }) {
+  const check = finding.posture_check;
+  return (
+    <>
+      <h2>Posture check</h2>
+      {check ? (
+        <dl className="facts">
+          <dt>Check</dt>
+          <dd>
+            {check.name} <span className="mono muted">({check.check_id})</span>
+          </dd>
+          <dt>Fails when</dt>
+          <dd>{check.description}</dd>
+          <dt>Why it matters</dt>
+          <dd>{check.rationale}</dd>
+          <dt>How to fix</dt>
+          <dd>{check.remediation}</dd>
+          <dt>Reference</dt>
+          <dd>{check.reference}</dd>
+        </dl>
+      ) : (
+        <p className="muted">
+          The check <span className="mono">{finding.detector_id}</span> no longer exists.
+        </p>
+      )}
+      <h2>Evidence</h2>
+      <p className="muted">
+        This finding describes configuration, not activity: no events are involved. The values
+        observed in the configuration snapshot are quoted in the explanation above.
+      </p>
+    </>
+  );
+}
+
+function RuleSection({ finding }: { finding: FindingDetail }) {
+  return (
+    <>
       <h2>Detection rule</h2>
       {finding.detector ? (
         <dl className="facts">

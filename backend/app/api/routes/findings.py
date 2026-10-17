@@ -7,8 +7,17 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_session
 from app.api.routes.events import MAX_PAGE_SIZE
-from app.api.schemas import DetectorInfo, EventSummary, FindingDetail, FindingSummary, Page
+from app.api.schemas import (
+    DetectorInfo,
+    EventSummary,
+    FindingDetail,
+    FindingSummary,
+    Page,
+    PostureCheckInfo,
+    finding_kind,
+)
 from app.detection.registry import DETECTORS_BY_ID
+from app.posture.registry import CHECKS_BY_ID
 from app.repositories.events import get_events
 from app.repositories.findings import FindingSort, get_finding, search_findings
 from app.schemas.finding import FindingStatus, Severity
@@ -57,9 +66,11 @@ def read_finding(
 
     finding = stored.finding
     detector = DETECTORS_BY_ID.get(finding.detector_id)
+    check = CHECKS_BY_ID.get(finding.detector_id)
     return FindingDetail(
         finding_id=finding.finding_id,
         detector_id=finding.detector_id,
+        kind=finding_kind(finding.detector_id),
         title=finding.title,
         severity=finding.severity,
         reason=finding.reason,
@@ -73,5 +84,6 @@ def read_finding(
         resource=finding.resource,
         risk=stored.risk,
         detector=DetectorInfo.from_detector(detector) if detector is not None else None,
+        posture_check=PostureCheckInfo.from_check(check) if check is not None else None,
         evidence=[EventSummary.from_event(e) for e in get_events(session, finding.event_ids)],
     )

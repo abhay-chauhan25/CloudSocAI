@@ -22,6 +22,7 @@ export const iamIncident: IncidentSummary = {
 export const adminFinding: FindingSummary = {
   finding_id: "finding-admin",
   detector_id: "admin-policy-attached",
+  kind: "rule",
   title: "AdministratorAccess policy attached",
   severity: "high",
   risk_score: 80,

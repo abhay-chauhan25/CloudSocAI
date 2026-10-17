@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) and an Isolation Forest behaviour-anomaly model, producing stored findings with explainable risk scores, correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) and an Isolation Forest behaviour-anomaly model, producing stored findings with explainable risk scores; 9 CSPM posture checks find insecure configuration in AWS snapshots; correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -31,6 +31,7 @@ backend/
     detection/      detector interface, engine, and rules
     risk/           explainable risk scoring
     ml/             behaviour anomaly detection (Isolation Forest): features, baseline, model
+    posture/        CSPM: configuration snapshot model and posture checks (IAM, S3, EC2, CloudTrail)
     correlation/    findings -> incidents, timelines
     api/            FastAPI app: /health, /events, /findings, /incidents, /detectors
     mitre/          curated MITRE ATT&CK catalog (v20)
@@ -39,11 +40,12 @@ backend/
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database
     detect.py       command: stored events -> anomaly scores + rules -> scored findings -> incidents
+    posture_scan.py command: configuration snapshot -> posture checks -> findings
   migrations/       Alembic database migrations
   tests/            pytest test suite
 frontend/           React + TypeScript dashboard (Vite)
-sample-data/        synthetic CloudTrail logs (fake identifiers only)
-docs/               architecture, detection rules, anomaly detection, AI analyst threat model, CloudTrail reference
+sample-data/        synthetic CloudTrail logs and AWS configuration snapshots (fake identifiers only)
+docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, CloudTrail reference
 docker-compose.yml  local PostgreSQL
 .env.example        configuration template (copy to .env)
 ```
@@ -77,6 +79,9 @@ python -m app.detect
 
 # Optional: see how the anomaly model performs (no database needed)
 python -m app.ml.evaluate
+
+# Check an AWS configuration snapshot for insecure settings (safe to re-run)
+python -m app.posture_scan ../sample-data/aws-config/insecure-account.json
 
 # 7. Start the API (listens on 127.0.0.1 only), then open http://127.0.0.1:8000/docs
 uvicorn app.api.main:app --reload
