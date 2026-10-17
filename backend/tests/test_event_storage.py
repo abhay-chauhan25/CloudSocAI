@@ -169,7 +169,7 @@ def test_ingest_command_exit_codes(
         # main() commits for real, so clean up what it stored.
         with db_engine.begin() as connection:
             # CASCADE also clears every table that references these.
-            connection.execute(text("TRUNCATE events, findings, incidents CASCADE"))
+            connection.execute(text("TRUNCATE events, findings, incidents, anomaly_scores CASCADE"))
 
 
 def test_ingest_command_reports_unreachable_database(

@@ -39,15 +39,17 @@ def test_detect_command_prints_findings_for_stored_events(
         # The commands commit for real, so clean up what they stored.
         with db_engine.begin() as connection:
             # CASCADE also clears every table that references these.
-            connection.execute(text("TRUNCATE events, findings, incidents CASCADE"))
+            connection.execute(text("TRUNCATE events, findings, incidents, anomaly_scores CASCADE"))
 
     assert stored == 7
     assert first_run.startswith("4 events analysed, 7 findings (7 new, 0 already stored)")
     assert second_run.startswith("4 events analysed, 7 findings (0 new, 7 already stored)")
-    assert "[CRITICAL] risk  80  CloudTrail logging stopped" in first_run
+    assert "1 activity hours scored, 1 unusual" in first_run
+    assert "[CRITICAL] risk  90  CloudTrail logging stopped" in first_run
     assert "+80  Base severity: critical" in first_run
+    assert "+10  Behaviour anomaly: 'root': Activity 2026-10-06 22:00-23:00Z" in first_run
     assert "Incidents: 1 created, 0 updated" in first_run
-    assert "NEW [CRITICAL] risk  95  Audit logging tampered: root  (7 findings)" in first_run
+    assert "NEW [CRITICAL] risk 100  Audit logging tampered: root  (7 findings)" in first_run
     assert "Incidents: 0 created, 0 updated" in second_run
 
 

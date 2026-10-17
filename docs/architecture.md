@@ -161,7 +161,7 @@ risk = base points for severity + context factors, capped to 0–100
 | Base severity | 5 / 20 / 40 / 60 / 80 | Always (informational → critical) |
 | New source IP | +15 | The actor first used this IP within the last 24 hours **and** has earlier activity from other addresses |
 | Long-term access key | +5 | The evidence used an `AKIA…` key (never expires; the most commonly leaked credential) |
-| ML anomaly, correlation | — | Added in later stages |
+| Behaviour anomaly | +10 | The actor's activity in the evidence's clock hour was flagged by the anomaly model (see [anomaly-detection.md](anomaly-detection.md)) |
 
 Worked example — the stolen developer key attaching `AdministratorAccess`:
 
@@ -169,8 +169,10 @@ Worked example — the stolen developer key attaching `AdministratorAccess`:
 +60  Base severity: high
 +15  New source IP: 'developer' first used 203.0.113.50 at 2026-10-06 03:04:12Z
  +5  Long-term access key: AKIA...MPLE
++10  Behaviour anomaly: 'developer': Activity 2026-10-06 03:00-04:00Z scored 0.593 against a
+     threshold of 0.588: security_writes 3 (normally at most 2).
  --
- 80
+ 90
 ```
 
 Design rules:

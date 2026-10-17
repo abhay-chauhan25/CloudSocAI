@@ -13,11 +13,13 @@ from app.detection.engine import run_detectors
 from app.normalization.cloudtrail import normalize_cloudtrail_records
 from app.risk.scoring import (
     BASE_SEVERITY_POINTS,
+    BEHAVIOUR_ANOMALY_POINTS,
     LONG_TERM_KEY_POINTS,
     NEW_SOURCE_IP_POINTS,
     RiskContext,
     score_finding,
 )
+from app.schemas.anomaly import AnomalyScore, UnusualFeature
 from app.schemas.event import Event
 from app.schemas.finding import Finding, Severity, make_finding_id
 from app.schemas.risk import RiskAssessment, RiskFactor
@@ -217,3 +219,55 @@ def test_fixture_scores(cloudtrail_samples_dir: Path) -> None:
     # root has no earlier activity (no baseline) and used a console session key
     assert scores[("cloudtrail-trail-deleted", "management-trail")] == 80
     assert scores[("failed-call-burst", None)] == 40 + 15 + 5
+
+
+# --- behaviour anomaly ---------------------------------------------------------
+
+
+def anomaly(
+    *, principal: str = "dev", hour: datetime = START, anomalous: bool = True
+) -> AnomalyScore:
+    return AnomalyScore(
+        principal=f"arn:aws:iam::123456789012:user/{principal}",
+        window_start=hour,
+        window_end=hour + timedelta(hours=1),
+        score=0.62 if anomalous else 0.45,
+        threshold=0.588,
+        is_anomalous=anomalous,
+        features={"failed_calls": 7},
+        unusual_features=(UnusualFeature(name="failed_calls", value=7, baseline_high=3),),
+        model_version="test",
+    )
+
+
+def score_with(event: Event, *anomalies: AnomalyScore) -> RiskAssessment:
+    return score_finding(finding_for(event), RiskContext.from_events([event], anomalies))
+
+
+def test_a_finding_in_an_anomalous_hour_gets_the_behaviour_factor() -> None:
+    event = make_event(at=START + timedelta(minutes=20))
+
+    risk = score_with(event, anomaly())
+
+    assert factor_names(risk) == ["Base severity: medium", "Behaviour anomaly"]
+    assert risk.score == BASE_SEVERITY_POINTS[Severity.MEDIUM] + BEHAVIOUR_ANOMALY_POINTS
+    explanation = risk.factors[-1].explanation
+    assert explanation.startswith("'dev': Activity 2026-10-07 09:00-10:00Z scored 0.620")
+    assert "failed_calls 7 (normally at most 3)" in explanation
+
+
+@pytest.mark.parametrize(
+    "score",
+    [
+        anomaly(anomalous=False),
+        anomaly(principal="someone-else"),
+        anomaly(hour=START + timedelta(hours=1)),
+    ],
+    ids=["hour-not-anomalous", "other-principal", "other-hour"],
+)
+def test_no_behaviour_factor_without_an_anomaly_for_that_actor_and_hour(
+    score: AnomalyScore,
+) -> None:
+    risk = score_with(make_event(at=START + timedelta(minutes=20)), score)
+
+    assert "Behaviour anomaly" not in factor_names(risk)

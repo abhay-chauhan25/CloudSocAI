@@ -1,4 +1,4 @@
-"""The analysis pipeline: detect, score, store findings, and correlate incidents.
+"""The analysis pipeline: score behaviour, detect, score risk, store, and correlate.
 
 Usage (from backend/, with the database running and events ingested):
 
@@ -18,9 +18,13 @@ from sqlalchemy.exc import OperationalError
 from app.correlation.service import CorrelationReport, run_correlation
 from app.db import create_db_engine, create_session_factory
 from app.detection.engine import DetectionResult, run_detectors
+from app.ml.features import build_windows
+from app.ml.model import default_model, score_windows
+from app.repositories.anomalies import save_anomaly_scores
 from app.repositories.events import list_events
 from app.repositories.findings import ScoredFinding, save_findings
 from app.risk.scoring import RiskContext, score_finding
+from app.schemas.anomaly import AnomalyScore
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +39,16 @@ def format_report(
     event_count: int,
     stored: int,
     correlation: CorrelationReport,
+    anomalies: list[AnomalyScore],
 ) -> str:
+    flagged = [score for score in anomalies if score.is_anomalous]
     lines = [
         f"{event_count} events analysed, {len(scored)} findings "
-        f"({stored} new, {len(scored) - stored} already stored)"
+        f"({stored} new, {len(scored) - stored} already stored)",
+        f"{len(anomalies)} activity hours scored, {len(flagged)} unusual",
     ]
+    for score in flagged:
+        lines.append(f"    UNUSUAL {score.principal}: {score.describe()}")
     for item in scored:
         finding, risk = item.finding, item.risk
         lines.append(
@@ -78,8 +87,10 @@ def main(argv: list[str] | None = None) -> int:
         # One transaction: findings and incidents are stored together or not at all.
         with sessions.begin() as session:
             events = list_events(session)
+            anomalies = score_windows(default_model(), build_windows(events))
+            save_anomaly_scores(session, anomalies)
             result = run_detectors(events)
-            context = RiskContext.from_events(events)
+            context = RiskContext.from_events(events, anomalies)
             scored = [ScoredFinding(f, score_finding(f, context)) for f in result.findings]
             stored = save_findings(session, scored)
             correlation = run_correlation(session)
@@ -89,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         engine.dispose()
 
-    print(format_report(result, scored, len(events), stored, correlation))
+    print(format_report(result, scored, len(events), stored, correlation, anomalies))
     return EXIT_DETECTOR_FAILED if result.failures else EXIT_OK
 
 

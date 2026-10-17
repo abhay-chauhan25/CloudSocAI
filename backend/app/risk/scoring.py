@@ -11,10 +11,12 @@ inflate the score without adding information.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from ipaddress import IPv4Address, IPv6Address
 
+from app.ml.features import principal_key, window_start
+from app.schemas.anomaly import AnomalyScore
 from app.schemas.event import Event
 from app.schemas.finding import Finding, Severity
 from app.schemas.risk import RiskAssessment, RiskFactor
@@ -28,6 +30,7 @@ BASE_SEVERITY_POINTS = {
 }
 NEW_SOURCE_IP_POINTS = 15
 LONG_TERM_KEY_POINTS = 5
+BEHAVIOUR_ANOMALY_POINTS = 10
 
 # An address counts as "new" for this long after a principal first uses it.
 NEW_SOURCE_IP_PERIOD = timedelta(hours=24)
@@ -47,15 +50,19 @@ class RiskContext:
     events_by_id: dict[str, Event]
     first_activity: dict[str, datetime]  # principal -> earliest event
     first_use_of_ip: dict[tuple[str, IpAddress], datetime]  # (principal, ip) -> earliest event
+    # (principal, hour) -> the anomaly model's verdict on that hour
+    anomalies: dict[tuple[str, datetime], AnomalyScore] = field(default_factory=dict)
 
     @classmethod
-    def from_events(cls, events: Iterable[Event]) -> "RiskContext":
+    def from_events(
+        cls, events: Iterable[Event], anomalies: Iterable[AnomalyScore] = ()
+    ) -> "RiskContext":
         events_by_id: dict[str, Event] = {}
         first_activity: dict[str, datetime] = {}
         first_use_of_ip: dict[tuple[str, IpAddress], datetime] = {}
         for event in events:
             events_by_id[event.event_id] = event
-            principal = _principal_key(event)
+            principal = principal_key(event)
             if principal is None:
                 continue
             first_activity[principal] = min(
@@ -65,7 +72,8 @@ class RiskContext:
                 key = (principal, event.source_ip)
                 earliest = first_use_of_ip.get(key, event.timestamp)
                 first_use_of_ip[key] = min(event.timestamp, earliest)
-        return cls(events_by_id, first_activity, first_use_of_ip)
+        by_window = {(score.principal, score.window_start): score for score in anomalies}
+        return cls(events_by_id, first_activity, first_use_of_ip, by_window)
 
     def evidence(self, finding: Finding) -> list[Event]:
         return [self.events_by_id[i] for i in finding.event_ids if i in self.events_by_id]
@@ -80,7 +88,11 @@ def score_finding(finding: Finding, context: RiskContext) -> RiskAssessment:
             explanation=f"The {finding.detector_id} rule rates this behaviour {finding.severity}.",
         )
     ]
-    for factor in (_new_source_ip(evidence, context), _long_term_key(evidence)):
+    for factor in (
+        _new_source_ip(evidence, context),
+        _long_term_key(evidence),
+        _behaviour_anomaly(evidence, context),
+    ):
         if factor is not None:
             factors.append(factor)
     return RiskAssessment.from_factors(factors)
@@ -94,7 +106,7 @@ def _new_source_ip(evidence: list[Event], context: RiskContext) -> RiskFactor | 
     "first time we have seen this principal at all".
     """
     for event in evidence:
-        principal = _principal_key(event)
+        principal = principal_key(event)
         if principal is None or event.source_ip is None:
             continue
         first_use = context.first_use_of_ip.get((principal, event.source_ip))
@@ -135,8 +147,24 @@ def _long_term_key(evidence: list[Event]) -> RiskFactor | None:
     return None
 
 
-def _principal_key(event: Event) -> str | None:
-    return event.principal_arn or event.principal
+def _behaviour_anomaly(evidence: list[Event], context: RiskContext) -> RiskFactor | None:
+    """The actor's activity in the hour of the evidence was unusual overall.
+
+    A statistical signal, not proof: about 5% of normal hours are flagged.
+    It only ever adds to a finding a rule already produced.
+    """
+    for event in evidence:
+        principal = principal_key(event)
+        if principal is None:
+            continue
+        score = context.anomalies.get((principal, window_start(event.timestamp)))
+        if score is not None and score.is_anomalous:
+            return RiskFactor(
+                name="Behaviour anomaly",
+                points=BEHAVIOUR_ANOMALY_POINTS,
+                explanation=f"{event.principal!r}: {score.describe()}",
+            )
+    return None
 
 
 def _mask(access_key_id: str) -> str:
