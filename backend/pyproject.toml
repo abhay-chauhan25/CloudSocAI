@@ -35,6 +35,8 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Lets tests import shared helpers as `tests.<module>`.
+pythonpath = ["."]
 # -ra: summarize every non-passing test at the end.
 # --strict-markers / --strict-config: typos in markers or config fail loudly
 # instead of being silently ignored.

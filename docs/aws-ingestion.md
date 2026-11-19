@@ -51,6 +51,8 @@ The recommended setup is a profile that **assumes a read-only role**. The creden
 - **No digest files.** `CloudTrail-Digest/` falls outside the prefix. Validating log integrity would need them, and it's a separate feature.
 - **KMS.** If the trail encrypts logs with a customer-managed KMS key, add `kms:Decrypt` on that key, conditioned on `kms:ViaService = s3.<region>.amazonaws.com` so the key can only be used through S3.
 
+The Terraform lab creates exactly this policy on a role; see [aws-lab.md](aws-lab.md).
+
 ## Running it
 
 ```bash
@@ -94,6 +96,7 @@ The command is **idempotent**: event IDs are unique, so re-reading a day stores 
 
 - **Unit tests (always run, offline):** `tests/test_cloudtrail_s3.py` uses botocore's **Stubber**. Each test queues the exact AWS responses it expects, the client is unsigned, and any unexpected call fails. This covers pagination, truncation, access denied, corrupt and oversized objects, and decompression bombs.
 - **Command tests (with the local database):** run the whole command against stubbed S3 and check that events are stored, and skipped on a re-run.
+- **Live run:** the [lab runbook](aws-lab.md) generates known activity, then checks the expected findings appear.
 - **Live test (opt-in):** `tests/test_aws_live.py` is marked `aws` and skipped unless `CLOUDSOC_LIVE_BUCKET`, `CLOUDSOC_LIVE_ACCOUNT_ID`, and `CLOUDSOC_LIVE_REGION` are set. It is read-only and database-free: it lists one day, downloads at most two files, and checks that every record normalizes. Point it only at the lab bucket. It never runs in CI.
 
 ## Cost

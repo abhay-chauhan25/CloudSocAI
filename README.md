@@ -42,11 +42,14 @@ backend/
     ingest_s3.py    command: S3 trail bucket -> normalize -> database
     detect.py       command: stored events -> anomaly scores + rules -> scored findings -> incidents
     posture_scan.py command: configuration snapshot -> posture checks -> findings
+    posture_collect.py command: live AWS account -> configuration snapshot (read-only)
+    lab/            Terraform-lab scenario generator (lab account only)
   migrations/       Alembic database migrations
   tests/            pytest test suite
 frontend/           React + TypeScript dashboard (Vite)
+infra/terraform/    disposable AWS lab: CloudTrail trail, read-only CloudSOC role, deliberately insecure targets
 sample-data/        synthetic CloudTrail logs and AWS configuration snapshots (fake identifiers only)
-docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, CloudTrail reference
+docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, AWS lab runbook, CloudTrail reference
 docker-compose.yml  local PostgreSQL
 .env.example        configuration template (copy to .env)
 ```
@@ -81,7 +84,8 @@ python -m app.detect
 # Optional: see how the anomaly model performs (no database needed)
 python -m app.ml.evaluate
 
-# Optional, needs AWS credentials: ingest real logs from a trail's bucket (see docs/aws-ingestion.md)
+# Optional, needs AWS: ingest real logs from a trail's bucket (docs/aws-ingestion.md);
+# docs/aws-lab.md builds a disposable lab with Terraform and generates activity to detect
 # python -m app.ingest_s3 --bucket <bucket> --account-id <id> --region us-east-1 --profile <profile>
 
 # Check an AWS configuration snapshot for insecure settings (safe to re-run)

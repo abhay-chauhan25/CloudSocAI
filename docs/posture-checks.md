@@ -42,6 +42,14 @@ Parsing rules:
 
 Fixtures: `sample-data/aws-config/insecure-account.json` (fails every check, 11 findings) and `secure-account.json` (passes every check).
 
+### Live collection
+
+`python -m app.posture_collect --profile <reader> --region <region> --output <file>` makes exactly those read-only calls and writes a snapshot (owner-readable only). It's then scanned like a fixture:
+- **Separate steps on purpose.** The file records exactly what the scan judged, so it can be inspected or re-scanned later.
+- **Partial access is reported, not hidden.** A section the credentials can't read (for example, no `ec2:DescribeSecurityGroups`) is left out, so its checks show as **not evaluated**, and the command exits 1.
+- **"Not configured" is a value, not an error.** `NoSuchPublicAccessBlockConfiguration` and `NoSuchBucketPolicy` become `null`.
+- **Permissions.** The reader policy needs ten read-only actions; the Terraform lab defines them (`infra/terraform/reader.tf`, see [aws-lab.md](aws-lab.md)).
+
 ## Checks
 
 | Check | Severity | Fails when |
