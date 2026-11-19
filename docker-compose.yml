@@ -1,5 +1,31 @@
-# Local development services. Start with: docker compose up -d
-# Values come from .env (copy .env.example to .env first).
+# CloudSOC local stack. Values come from .env (copy .env.example to .env first).
+#
+#   docker compose up -d --build --wait          # database, migrations, API, dashboard
+#   docker compose run --rm seed                 # load the synthetic demo data
+#   open http://127.0.0.1:8080
+#
+#   docker compose up -d --wait postgres         # database only, for local development
+#
+# Two networks keep tiers apart: the dashboard can reach the API but not the
+# database. Only the dashboard (8080) and, for development, the database
+# (5432) are published, both on 127.0.0.1 only.
+
+x-backend: &backend
+  build: ./backend
+  image: cloudsoc-backend:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    # Inside the Compose network the database is the "postgres" service,
+    # not localhost; this overrides the value in .env.
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+  networks: [data]
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
 
 services:
   postgres:
@@ -13,11 +39,66 @@ services:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - cloudsoc-pgdata:/var/lib/postgresql/data
+    networks: [data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Applies database migrations, then exits. The API starts only after it succeeds.
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    networks: [data, edge]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    image: cloudsoc-frontend:local
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    networks: [edge]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # One-off: load the synthetic samples and run detection and a posture scan.
+  # Not started by `up` (it is in the "demo" profile); run it with
+  # `docker compose run --rm seed`.
+  seed:
+    <<: *backend
+    profiles: [demo]
+    volumes:
+      - ./sample-data:/sample-data:ro
+    command:
+      - sh
+      - -c
+      - >-
+        python -m app.ingest /sample-data/cloudtrail/*.json
+        && python -m app.detect
+        && python -m app.posture_scan /sample-data/aws-config/insecure-account.json
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  data:
+  edge:
 
 volumes:
   cloudsoc-pgdata:

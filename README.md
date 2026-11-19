@@ -49,22 +49,35 @@ backend/
 frontend/           React + TypeScript dashboard (Vite)
 infra/terraform/    disposable AWS lab: CloudTrail trail, read-only CloudSOC role, deliberately insecure targets
 sample-data/        synthetic CloudTrail logs and AWS configuration snapshots (fake identifiers only)
-docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, AWS lab runbook, CloudTrail reference
-docker-compose.yml  local PostgreSQL
+docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, AWS lab runbook, containers, CloudTrail reference
+docker-compose.yml  full local stack: PostgreSQL, migrations, API, dashboard (+ demo seed job)
 .env.example        configuration template (copy to .env)
 ```
 
-## Local setup
+## Quick start (Docker only)
 
-Requirements: **Python 3.12+**, **Node.js 20.19+**, and **Docker**. No AWS account is needed — everything runs on synthetic data.
+Requirements: **Docker**. No AWS account is needed — everything runs on synthetic data.
+
+```bash
+cp .env.example .env                  # then set POSTGRES_PASSWORD
+docker compose up -d --build --wait   # database, migrations, API, dashboard
+docker compose run --rm seed          # load the synthetic samples, detect, scan posture
+open http://127.0.0.1:8080
+```
+
+See [docs/containers.md](docs/containers.md) for the images, networks, and hardening.
+
+## Local development setup
+
+Requirements: **Python 3.12+**, **Node.js 20.19+**, and **Docker** (for PostgreSQL).
 
 ```bash
 # 1. Configuration: copy the template and set your own password
 #    (optional: add GEMINI_API_KEY for real AI analyses; without it a mock is used)
 cp .env.example .env
 
-# 2. Start PostgreSQL (bound to localhost only)
-docker compose up -d --wait
+# 2. Start only PostgreSQL (bound to localhost only)
+docker compose up -d --wait postgres
 
 # 3. Backend environment
 cd backend
