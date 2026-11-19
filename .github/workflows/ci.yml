@@ -1,0 +1,170 @@
+# Continuous integration: every push to main and every pull request must pass
+# lint, type checks, tests, a dependency audit, Terraform validation, and a
+# smoke test of the full Docker stack.
+#
+# Supply-chain hygiene: third-party actions are pinned to full commit SHAs
+# (a tag can be moved to malicious code; a SHA cannot), the workflow token
+# can only read the repository, and checkout does not keep the token on disk.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: cloudsoc
+          POSTGRES_PASSWORD: ci-only-not-a-secret
+          POSTGRES_DB: cloudsoc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cloudsoc -d cloudsoc"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      POSTGRES_USER: cloudsoc
+      POSTGRES_PASSWORD: ci-only-not-a-secret
+      POSTGRES_DB: cloudsoc
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      # Database tests fail instead of skipping if PostgreSQL is unreachable.
+      CLOUDSOC_REQUIRE_DB: "1"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.lock
+      - name: Install exact dependencies
+        run: |
+          pip install --requirement requirements-dev.lock
+          pip install --no-deps --editable .
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: pytest
+
+  frontend:
+    name: Frontend (tsc, vitest, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.23.3"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  dependency-audit:
+    name: Known-vulnerability audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.23.3"
+      # Checks the exact runtime versions against the PyPI/OSV advisory
+      # databases. The lock file is complete, so nothing needs installing.
+      - name: pip-audit (backend runtime dependencies)
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit --requirement backend/requirements.lock --no-deps --disable-pip --progress-spinner off
+      # Runtime packages only: dev tools never reach users' browsers.
+      - name: npm audit (dashboard runtime dependencies)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  terraform:
+    name: Terraform (fmt, validate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+      # No AWS credentials exist in CI: these steps only check syntax, types,
+      # and provider schema. Nothing is planned or applied.
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
+  stack:
+    name: Docker stack smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Write a throwaway .env
+        run: |
+          {
+            echo "POSTGRES_USER=cloudsoc"
+            echo "POSTGRES_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+            echo "POSTGRES_DB=cloudsoc"
+            echo "API_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          } > .env
+      - run: docker compose up --detach --build --wait
+      - run: docker compose run --rm seed
+      - name: Dashboard and API answer through nginx
+        run: |
+          curl --fail --silent http://127.0.0.1:8080/ | grep -q "<title>CloudSOC AI</title>"
+          curl --fail --silent http://127.0.0.1:8080/api/health
+          total=$(curl --fail --silent http://127.0.0.1:8080/api/incidents | python3 -c 'import json,sys; print(json.load(sys.stdin)["total"])')
+          echo "incidents: $total"
+          test "$total" -gt 0
+      - name: The API refuses requests that skip the proxy's key
+        run: |
+          status=$(docker compose exec -T web wget -q -O /dev/null -S http://api:8000/incidents 2>&1 | grep -o "HTTP/1.1 [0-9]*" | head -1)
+          echo "$status"
+          test "$status" = "HTTP/1.1 401"
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down --volumes

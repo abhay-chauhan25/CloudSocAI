@@ -57,6 +57,7 @@ open http://127.0.0.1:8080
 - **`cap_drop: [ALL]`.** Neither service needs any Linux capability: nginx binds 8080, which needs no privilege.
 - **`no-new-privileges`.** setuid binaries can't regain privileges.
 - **`server_tokens off`.** nginx doesn't reveal its version.
+- **API key added by nginx.** The key comes from the container's environment through a config template rendered at start-up, so the browser never holds it. nginx also sends the dashboard's Content-Security-Policy and other security headers ([security-review.md](security-review.md)).
 - **Secrets stay out.** `.env` is excluded from both build contexts, and `docker history` shows no secret.
 
 ## Local development without containers

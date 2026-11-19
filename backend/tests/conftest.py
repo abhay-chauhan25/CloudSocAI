@@ -1,7 +1,9 @@
 """Shared pytest fixtures."""
 
+import os
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 from alembic import command
@@ -24,6 +26,7 @@ from app.repositories.events import save_events
 from app.repositories.findings import ScoredFinding, save_findings
 from app.risk.scoring import RiskContext, score_finding
 from app.schemas.event import Event
+from tests.api_client import authenticated_client
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = BACKEND_DIR.parent
@@ -69,10 +72,18 @@ def test_database_url() -> URL:
         name = f"{settings.postgres_db}_test"
         _ensure_database_exists(settings, name)
     except ValidationError:
-        pytest.skip("database settings missing: copy .env.example to .env")
+        _skip_or_fail("database settings missing: copy .env.example to .env")
     except OperationalError:
-        pytest.skip("PostgreSQL is not reachable: run `docker compose up -d`")
+        _skip_or_fail("PostgreSQL is not reachable: run `docker compose up -d --wait postgres`")
     return settings.database_url(name)
+
+
+def _skip_or_fail(reason: str) -> NoReturn:
+    # Locally a missing database skips the database tests. In CI it must
+    # fail: a skipped test there would look like a passing one.
+    if os.environ.get("CLOUDSOC_REQUIRE_DB"):
+        pytest.fail(reason)
+    pytest.skip(reason)
 
 
 @pytest.fixture(scope="session")
@@ -115,9 +126,7 @@ def client(db_session: Session) -> Iterator[TestClient]:
     """An API client whose requests use the rolled-back test session."""
     app = create_app()
     app.dependency_overrides[get_session] = lambda: db_session
-    # Not used as a context manager, so the lifespan (which would connect to
-    # the development database) never runs.
-    yield TestClient(app)
+    yield authenticated_client(app)
 
 
 @pytest.fixture

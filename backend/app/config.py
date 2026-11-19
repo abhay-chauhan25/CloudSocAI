@@ -1,15 +1,15 @@
 """Application settings, read from environment variables or the repo-root .env file.
 
 Environment variables take precedence over .env, so deployments can inject
-real values without files. Secrets (the database password, the Gemini API
-key) are SecretStr: hidden in repr() and logs, unwrapped only where used.
+real values without files. Secrets (the database password, the Gemini and
+API keys) are SecretStr: hidden in repr() and logs, unwrapped only where used.
 """
 
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -33,6 +33,25 @@ class Settings(BaseSettings):
     ai_daily_limit: int = 50  # analysis attempts per 24 hours, across all incidents
     ai_cooldown_seconds: int = 60  # minimum time between attempts for one incident
 
+    # Shared secret for the HTTP API (X-API-Key). Required to start the API;
+    # the command-line tools do not use it.
+    api_key: SecretStr | None = None
+
+    @field_validator("api_key", mode="before")
+    @classmethod
+    def _blank_is_unset(cls, value: object) -> object:
+        # `API_KEY=` copied from .env.example means "not set", not "empty key".
+        return None if value == "" else value
+
+    @field_validator("api_key")
+    @classmethod
+    def _long_enough(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < 32:
+            raise ValueError(
+                "API_KEY must be at least 32 characters (use secrets.token_urlsafe(32))"
+            )
+        return value
+
     def resolved_ai_provider(self) -> Literal["gemini", "mock", "disabled"]:
         if self.ai_provider is not None:
             return self.ai_provider
@@ -54,4 +73,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]  # values come from the environment
+    return Settings()  # values come from the environment

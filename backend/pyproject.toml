@@ -27,6 +27,7 @@ dependencies = [
 dev = [
     "pytest>=8",
     "ruff>=0.6",
+    "mypy>=2.4",  # static type checking (run: mypy)
 ]
 
 [tool.setuptools.packages.find]
@@ -45,6 +46,21 @@ markers = [
     "db: needs the local PostgreSQL database (skipped with a reason if it is not running)",
     "aws: reads a real AWS account (skipped unless CLOUDSOC_LIVE_* variables are set)",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["app"]
+# The pydantic plugin understands model constructors: fields are validated
+# (and coerced) at runtime, e.g. an ISO timestamp string becomes a datetime.
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# These libraries ship no type information; their calls are typed as Any.
+module = ["boto3", "boto3.*", "botocore", "botocore.*", "sklearn", "sklearn.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py312"

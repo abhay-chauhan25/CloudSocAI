@@ -1,5 +1,7 @@
 # CloudSOC AI
 
+[![CI](https://github.com/abhay-chauhan25/CloudSocAI/actions/workflows/ci.yml/badge.svg)](https://github.com/abhay-chauhan25/CloudSocAI/actions/workflows/ci.yml)
+
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
 > **Status: early prototype.** Synthetic CloudTrail logs (or real ones, read from a trail's S3 bucket) can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) and an Isolation Forest behaviour-anomaly model, producing stored findings with explainable risk scores; 9 CSPM posture checks find insecure configuration in AWS snapshots; correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
@@ -49,7 +51,7 @@ backend/
 frontend/           React + TypeScript dashboard (Vite)
 infra/terraform/    disposable AWS lab: CloudTrail trail, read-only CloudSOC role, deliberately insecure targets
 sample-data/        synthetic CloudTrail logs and AWS configuration snapshots (fake identifiers only)
-docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, AWS lab runbook, containers, CloudTrail reference
+docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, AWS lab runbook, containers, security review, CloudTrail reference
 docker-compose.yml  full local stack: PostgreSQL, migrations, API, dashboard (+ demo seed job)
 .env.example        configuration template (copy to .env)
 ```
@@ -59,7 +61,7 @@ docker-compose.yml  full local stack: PostgreSQL, migrations, API, dashboard (+ 
 Requirements: **Docker**. No AWS account is needed — everything runs on synthetic data.
 
 ```bash
-cp .env.example .env                  # then set POSTGRES_PASSWORD
+cp .env.example .env                  # then set POSTGRES_PASSWORD and API_KEY
 docker compose up -d --build --wait   # database, migrations, API, dashboard
 docker compose run --rm seed          # load the synthetic samples, detect, scan posture
 open http://127.0.0.1:8080
@@ -72,8 +74,9 @@ See [docs/containers.md](docs/containers.md) for the images, networks, and harde
 Requirements: **Python 3.12+**, **Node.js 20.19+**, and **Docker** (for PostgreSQL).
 
 ```bash
-# 1. Configuration: copy the template and set your own password
-#    (optional: add GEMINI_API_KEY for real AI analyses; without it a mock is used)
+# 1. Configuration: copy the template, set your own password and an API key
+#    (python3 -c "import secrets; print(secrets.token_urlsafe(32))");
+#    optional: add GEMINI_API_KEY for real AI analyses; without it a mock is used
 cp .env.example .env
 
 # 2. Start only PostgreSQL (bound to localhost only)
@@ -104,7 +107,8 @@ python -m app.ml.evaluate
 # Check an AWS configuration snapshot for insecure settings (safe to re-run)
 python -m app.posture_scan ../sample-data/aws-config/insecure-account.json
 
-# 7. Start the API (listens on 127.0.0.1 only), then open http://127.0.0.1:8000/docs
+# 7. Start the API (listens on 127.0.0.1 only; every route but /health needs X-API-Key),
+#    then open http://127.0.0.1:8000/docs and use "Authorize" with your API_KEY
 uvicorn app.api.main:app --reload
 ```
 
@@ -113,7 +117,7 @@ In a second terminal, start the dashboard:
 ```bash
 cd frontend
 npm install
-npm run dev             # http://127.0.0.1:5173 (calls the API through Vite's /api proxy)
+npm run dev             # http://127.0.0.1:5173 (Vite's /api proxy adds the API key server-side)
 ```
 
 ## Running checks
@@ -125,6 +129,7 @@ pytest                  # run the test suite (database tests use a separate *_te
                         # and are skipped with a message if PostgreSQL is not running)
 ruff check .            # lint (includes security rules from flake8-bandit)
 ruff format --check .   # verify formatting (use `ruff format .` to fix)
+mypy                    # static type check of app/ (configured in pyproject.toml)
 ```
 
 From `frontend/`:

@@ -4,12 +4,12 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
+from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session
 
 from app.ai.providers import MockProvider, ProviderResponse
 from app.ai.schemas import IncidentContext
-from app.ai.service import AnalystConfig
+from app.ai.service import ANALYSIS_LOCK_ID, AnalystConfig
 from app.api.routes.analysis import get_analyst_config
 
 pytestmark = [pytest.mark.db, pytest.mark.usefixtures("seeded")]
@@ -174,3 +174,22 @@ def test_analysis_never_changes_the_incident(client: TestClient) -> None:
     after = client.get(f"/incidents/{target}").json()
     for field in ("severity", "risk", "status", "mitre", "findings"):
         assert after[field] == before[field], field
+
+
+def test_concurrent_analysis_is_refused_while_one_is_running(
+    client: TestClient, db_engine: Engine
+) -> None:
+    provider = CountingProvider()
+    use_analyst(client, provider)
+    incident = incident_id(client)
+
+    # Another API worker, mid-analysis, holds the lock in its own transaction.
+    with db_engine.connect() as other, other.begin():
+        other.execute(select(func.pg_advisory_xact_lock(ANALYSIS_LOCK_ID)))
+        response = client.post(f"/incidents/{incident}/analysis")
+
+    assert response.status_code == 429
+    assert "in progress" in response.json()["detail"]
+    assert provider.calls == 0
+    # Released with the other transaction: the next attempt goes through.
+    assert client.post(f"/incidents/{incident}/analysis").status_code == 201

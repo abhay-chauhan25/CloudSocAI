@@ -9,6 +9,7 @@ failures included, so usage is auditable and counts toward the limits.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.ai.context import build_context, context_hash
@@ -26,6 +27,10 @@ from app.repositories.analyses import (
     record_failure,
     record_success,
 )
+
+# Any fixed 64-bit number works; it only has to differ from other advisory
+# locks taken on the same database (CloudSOC takes no others).
+ANALYSIS_LOCK_ID = 0x0C10_D50C_A1A1
 
 
 @dataclass(frozen=True)
@@ -98,6 +103,7 @@ def analyze_incident(
     ):
         return AnalysisOutcome(cached, cached=True)
 
+    _acquire_analysis_lock(session)
     _enforce_limits(session, incident_id, config, now)
 
     attempt = {
@@ -129,6 +135,21 @@ def analyze_incident(
         output_tokens=response.output_tokens,
     )
     return AnalysisOutcome(stored, cached=False)
+
+
+def _acquire_analysis_lock(session: Session) -> None:
+    """Allow one paid analysis at a time, across all API workers.
+
+    Without this, two simultaneous requests could both pass the cooldown and
+    daily-cap checks before either records its attempt, and both call the
+    provider. A PostgreSQL advisory lock is shared by every connection to
+    the database; the "xact" form is released automatically when the
+    request's transaction commits or rolls back, even if the call fails.
+    "try" returns at once instead of queueing behind a 45-second call.
+    """
+    acquired = session.scalar(select(func.pg_try_advisory_xact_lock(ANALYSIS_LOCK_ID)))
+    if not acquired:
+        raise RateLimited("Another AI analysis is in progress; retry in a few seconds.", 5)
 
 
 def _enforce_limits(

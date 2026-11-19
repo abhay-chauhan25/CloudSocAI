@@ -208,9 +208,11 @@ def main(argv: list[str] | None = None) -> int:
         logger.info("scenario %s", name)
         try:
             runs[name]()
-        except (*AWS_ERRORS, RuntimeError) as exc:
-            message = describe_aws_error(exc) if isinstance(exc, AWS_ERRORS) else str(exc)
-            logger.error("scenario %s failed: %s", name, message)
+        except AWS_ERRORS as exc:
+            logger.error("scenario %s failed: %s", name, describe_aws_error(exc))
+            failed = True
+        except RuntimeError as exc:
+            logger.error("scenario %s failed: %s", name, exc)
             failed = True
 
     logger.info("done; CloudTrail delivers these events to S3 within about 5-15 minutes")

@@ -24,6 +24,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 
 import boto3
@@ -89,10 +90,10 @@ def collect_snapshot(
     for section in SECTIONS:
         try:
             collection.snapshot[section] = collectors[section]()
-        except (*AWS_ERRORS, CollectionError) as exc:
-            collection.missing[section] = (
-                str(exc) if isinstance(exc, CollectionError) else describe_aws_error(exc)
-            )
+        except CollectionError as exc:
+            collection.missing[section] = str(exc)
+        except AWS_ERRORS as exc:
+            collection.missing[section] = describe_aws_error(exc)
     return collection
 
 
@@ -124,10 +125,10 @@ def _collect_s3(s3: Any, s3control: Any, account_id: str) -> dict[str, Any]:
     for bucket in s3.list_buckets().get("Buckets", []):
         name = bucket["Name"]
         block = _absent_as_none(
-            lambda name=name: s3.get_public_access_block(Bucket=name), NO_PUBLIC_ACCESS_BLOCK
+            partial(s3.get_public_access_block, Bucket=name), NO_PUBLIC_ACCESS_BLOCK
         )
         status = _absent_as_none(
-            lambda name=name: s3.get_bucket_policy_status(Bucket=name), NO_BUCKET_POLICY
+            partial(s3.get_bucket_policy_status, Bucket=name), NO_BUCKET_POLICY
         )
         buckets.append(
             {

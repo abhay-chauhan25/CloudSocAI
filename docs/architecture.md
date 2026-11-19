@@ -280,7 +280,7 @@ Design notes:
 - **Validation:** invalid parameters (out-of-range `limit`, unknown `severity`/`status`/`sort`, over-long strings) are rejected with **422** before any database work. Unknown IDs return **404**.
 - **Failures:** a database outage returns **503** `{"detail": "Database unavailable"}` — driver errors, hosts, and ports are logged, never sent to clients.
 - **Sessions:** one read-only session per request through the `get_session` dependency; tests override it to use the rolled-back test database.
-- **No authentication yet.** The server must only listen on `127.0.0.1` (uvicorn's default), like PostgreSQL. Authentication and API hardening are reviewed before anything is exposed.
+- **API key.** Every route except `/health` requires `X-API-Key`, which the dashboard's proxy (Vite or nginx) adds server-side. A Fetch Metadata check blocks cross-site writes (CSRF), and a Host allowlist blocks DNS rebinding. Details: [security-review.md](security-review.md).
 
 ## Dashboard (frontend)
 

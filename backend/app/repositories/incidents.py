@@ -3,11 +3,12 @@
 Functions take a Session and do not commit: the caller owns the transaction.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import UnaryExpression
 
 from app.models.finding import FindingRecord
 from app.models.incident import IncidentFinding, IncidentRecord
@@ -120,6 +121,7 @@ def search_incidents(
         query = query.where(IncidentRecord.principal == principal)
 
     total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+    order: tuple[UnaryExpression[Any], ...]
     if sort == "risk":
         order = (IncidentRecord.risk_score.desc(), IncidentRecord.last_seen.desc())
     else:

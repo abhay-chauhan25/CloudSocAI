@@ -65,11 +65,16 @@ services:
   web:
     build: ./frontend
     image: cloudsoc-frontend:local
+    environment:
+      # nginx adds this to every /api request; the browser never sees it.
+      API_KEY: ${API_KEY:?set API_KEY in .env}
     ports:
       - "127.0.0.1:${WEB_PORT:-8080}:8080"
     networks: [edge]
     read_only: true
-    tmpfs: [/tmp]
+    # conf.d is writable (by nginx's user, 101) only so the entrypoint can
+    # render the config template at start-up.
+    tmpfs: [/tmp, "/etc/nginx/conf.d:uid=101,gid=101,mode=0755"]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     depends_on:

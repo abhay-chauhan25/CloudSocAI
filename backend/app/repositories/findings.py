@@ -6,11 +6,12 @@ the caller owns the transaction.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import UnaryExpression
 
 from app.models.finding import FindingEvidence, FindingRecord
 from app.schemas.finding import Finding, FindingStatus, Severity, StoredFinding
@@ -101,6 +102,7 @@ def search_findings(
         query = query.where(FindingRecord.principal == principal)
 
     total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+    order: tuple[UnaryExpression[Any], ...]
     if sort == "risk":
         order = (FindingRecord.risk_score.desc(), FindingRecord.first_seen.desc())
     else:

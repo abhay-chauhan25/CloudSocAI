@@ -61,21 +61,21 @@ class FailedCallBurst(Detector):
         produces one finding rather than one per extra failure.
         """
         bursts: list[list[Event]] = []
-        burst_start = burst_end = None
+        current: tuple[int, int] | None = None  # (first, last) index of the open burst
         left = 0
         for right, event in enumerate(failures):
             while event.timestamp - failures[left].timestamp > self.window:
                 left += 1
             if right - left + 1 < self.threshold:
                 continue
-            if burst_end is not None and left <= burst_end:
-                burst_end = right  # overlaps the current burst: extend it
+            if current is not None and left <= current[1]:
+                current = (current[0], right)  # overlaps the current burst: extend it
             else:
-                if burst_start is not None:
-                    bursts.append(failures[burst_start : burst_end + 1])
-                burst_start, burst_end = left, right
-        if burst_start is not None:
-            bursts.append(failures[burst_start : burst_end + 1])
+                if current is not None:
+                    bursts.append(failures[current[0] : current[1] + 1])
+                current = (left, right)
+        if current is not None:
+            bursts.append(failures[current[0] : current[1] + 1])
         return bursts
 
     def _finding(self, burst: list[Event]) -> Finding:

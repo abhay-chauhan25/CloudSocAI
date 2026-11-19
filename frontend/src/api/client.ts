@@ -47,6 +47,8 @@ export function buildUrl(path: string, params: Record<string, QueryValue> = {}):
 
 function messageFor(status: number): string {
   switch (status) {
+    case 401:
+      return "The API rejected the dashboard's credentials. Is API_KEY set in .env?";
     case 404:
       return "Not found.";
     case 422:

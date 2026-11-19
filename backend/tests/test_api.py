@@ -10,6 +10,7 @@ from app.api.deps import get_session
 from app.api.main import create_app
 from app.config import get_settings
 from app.db import create_db_engine, create_session_factory
+from tests.api_client import authenticated_client
 
 pytestmark = pytest.mark.db
 
@@ -328,7 +329,7 @@ def unreachable_client() -> Iterator[TestClient]:
 
     app = create_app()
     app.dependency_overrides[get_session] = broken_session
-    yield TestClient(app)
+    yield authenticated_client(app)
     engine.dispose()
 
 

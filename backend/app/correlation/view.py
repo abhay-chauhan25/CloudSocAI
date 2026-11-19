@@ -65,7 +65,9 @@ def incident_techniques(findings: list[StoredFinding]) -> list[IncidentTechnique
     rules_by_technique: dict[str, set[str]] = {}
     for stored in findings:
         detector = DETECTORS_BY_ID.get(stored.finding.detector_id)
-        for mapping in detector.mitre if detector is not None else ():
+        if detector is None:  # e.g. a posture check: no ATT&CK mapping
+            continue
+        for mapping in detector.mitre:
             rules_by_technique.setdefault(mapping.technique_id, set()).add(detector.detector_id)
 
     techniques = sorted(
