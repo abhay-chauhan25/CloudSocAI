@@ -19,7 +19,7 @@ from pathlib import Path
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.collectors.cloudtrail_file import CloudTrailFileError, load_cloudtrail_file
+from app.collectors.cloudtrail_file import CloudTrailFileError, RawRecord, load_cloudtrail_file
 from app.db import create_db_engine, create_session_factory
 from app.normalization.cloudtrail import RecordError, normalize_cloudtrail_records
 from app.repositories.events import save_events
@@ -40,9 +40,12 @@ class IngestReport:
     errors: list[RecordError]
 
 
-def ingest_cloudtrail_file(session: Session, path: Path) -> IngestReport:
-    """Load, normalize, and store one file inside the caller's transaction."""
-    records = load_cloudtrail_file(path)
+def ingest_records(session: Session, source: str, records: list[RawRecord]) -> IngestReport:
+    """Normalize and store one log file's records inside the caller's transaction.
+
+    Shared by local files and S3 objects: ``source`` names where the records
+    came from in logs and reports.
+    """
     result = normalize_cloudtrail_records(records)
     inserted = save_events(session, result.events)
 
@@ -51,18 +54,34 @@ def ingest_cloudtrail_file(session: Session, path: Path) -> IngestReport:
         # eventID cannot forge extra lines in the log (log injection).
         logger.warning(
             "%s: record %d (eventID=%r) rejected: %s",
-            path,
+            source,
             error.index,
             error.event_id,
             error.reason,
         )
 
     return IngestReport(
-        source=str(path),
+        source=source,
         records=len(records),
         inserted=inserted,
         duplicates=len(result.events) - inserted,
         errors=result.errors,
+    )
+
+
+def ingest_cloudtrail_file(session: Session, path: Path) -> IngestReport:
+    """Load, normalize, and store one file inside the caller's transaction."""
+    return ingest_records(session, str(path), load_cloudtrail_file(path))
+
+
+def log_report(report: IngestReport) -> None:
+    logger.info(
+        "%s: %d records, %d stored, %d duplicates skipped, %d rejected",
+        report.source,
+        report.records,
+        report.inserted,
+        report.duplicates,
+        len(report.errors),
     )
 
 
@@ -85,14 +104,7 @@ def main(argv: list[str] | None = None) -> int:
                 all_clean = False
                 continue
 
-            logger.info(
-                "%s: %d records, %d stored, %d duplicates skipped, %d rejected",
-                path,
-                report.records,
-                report.inserted,
-                report.duplicates,
-                len(report.errors),
-            )
+            log_report(report)
             all_clean = all_clean and not report.errors
     except OperationalError as exc:
         logger.error("database unavailable (is `docker compose up -d` running?): %s", exc.orig)

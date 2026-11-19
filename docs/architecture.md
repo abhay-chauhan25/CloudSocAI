@@ -106,11 +106,17 @@ python -m app.ingest <files>
     → normalize_cloudtrail_records()  normalization/cloudtrail.py
     → save_events()                   repositories/events.py
     → events table                    models/event.py, created by migrations/
+
+python -m app.ingest_s3 --bucket … --account-id … --region …
+    → list_log_keys(), read_log_object()  collectors/cloudtrail_s3.py (gzip, size-capped)
+    → the same normalize → save path      ingest.ingest_records()
 ```
+
+Real AWS logs reuse the whole pipeline; see [aws-ingestion.md](aws-ingestion.md) for credentials, the read-only policy, and failure handling.
 
 - **Two models on purpose.** The Pydantic `Event` is the validated in-memory shape; the SQLAlchemy `EventRecord` is the storage shape. Only `repositories/` converts between them.
 - **Idempotent ingestion.** `event_id` has a `UNIQUE` constraint and inserts use `ON CONFLICT DO NOTHING`, so re-ingesting a file stores nothing twice — enforced by the database even under concurrent writers.
-- **One transaction per file.** A file is stored completely or not at all; one unreadable file does not stop the others.
+- **One transaction per file** (or S3 object). A file is stored completely or not at all; one unreadable file does not stop the others.
 - **Column types:** `timestamp with time zone`, `INET` for `source_ip`, `JSONB` for `raw_event` and `request_parameters` (queryable, e.g. `raw_event -> 'requestParameters' ->> 'policyArn'`). `ingested_at` records when CloudSOC stored the event, separate from when it happened.
 - **Indexes** on `timestamp`, `principal_arn`, and `event_name` — the fields detection and correlation filter by.
 - **Schema changes only through Alembic migrations.** Constraint names follow a fixed naming convention. A test fails if the models and migrations drift apart.

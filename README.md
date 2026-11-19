@@ -2,7 +2,7 @@
 
 An AWS-focused security monitoring platform — a lightweight **cloud SIEM + CSPM** with AI-assisted investigation — built as a portfolio and learning project.
 
-> **Status: early prototype.** Synthetic CloudTrail logs can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) and an Isolation Forest behaviour-anomaly model, producing stored findings with explainable risk scores; 9 CSPM posture checks find insecure configuration in AWS snapshots; correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
+> **Status: early prototype.** Synthetic CloudTrail logs (or real ones, read from a trail's S3 bucket) can be loaded, normalized, stored in PostgreSQL, and analysed by 8 deterministic detection rules (mapped to MITRE ATT&CK) and an Isolation Forest behaviour-anomaly model, producing stored findings with explainable risk scores; 9 CSPM posture checks find insecure configuration in AWS snapshots; correlated into incidents with investigation timelines, explained on request by an advisory LLM analyst (Gemini, grounded and validated), and served by a REST API and a React dashboard. See [Roadmap](#roadmap).
 
 ## What it will do
 
@@ -25,7 +25,7 @@ Core design rule: **rules and ML detect; the LLM only explains.** The LLM never 
 ```text
 backend/
   app/
-    collectors/     read raw log files
+    collectors/     read raw CloudTrail logs from local files or S3 (boto3, read-only)
     normalization/  raw CloudTrail records -> Events
     schemas/        Pydantic data models (Event, Finding, RiskAssessment)
     detection/      detector interface, engine, and rules
@@ -39,13 +39,14 @@ backend/
     models/         SQLAlchemy database tables
     repositories/   save/load data
     ingest.py       command: file -> normalize -> database
+    ingest_s3.py    command: S3 trail bucket -> normalize -> database
     detect.py       command: stored events -> anomaly scores + rules -> scored findings -> incidents
     posture_scan.py command: configuration snapshot -> posture checks -> findings
   migrations/       Alembic database migrations
   tests/            pytest test suite
 frontend/           React + TypeScript dashboard (Vite)
 sample-data/        synthetic CloudTrail logs and AWS configuration snapshots (fake identifiers only)
-docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, CloudTrail reference
+docs/               architecture, detection rules, posture checks, anomaly detection, AI analyst threat model, AWS ingestion, CloudTrail reference
 docker-compose.yml  local PostgreSQL
 .env.example        configuration template (copy to .env)
 ```
@@ -79,6 +80,9 @@ python -m app.detect
 
 # Optional: see how the anomaly model performs (no database needed)
 python -m app.ml.evaluate
+
+# Optional, needs AWS credentials: ingest real logs from a trail's bucket (see docs/aws-ingestion.md)
+# python -m app.ingest_s3 --bucket <bucket> --account-id <id> --region us-east-1 --profile <profile>
 
 # Check an AWS configuration snapshot for insecure settings (safe to re-run)
 python -m app.posture_scan ../sample-data/aws-config/insecure-account.json
